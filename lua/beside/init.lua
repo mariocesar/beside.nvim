@@ -16,6 +16,9 @@ end
 Beside.config = {
   -- Preview width: fraction of the screen, or a column count when 2 or more
   width = 0.4,
+
+  -- Milliseconds after the last change before re-rendering
+  delay = 100,
 }
 
 -- Module functionality =======================================================
@@ -24,17 +27,20 @@ Beside.open = function()
   local buf = api.nvim_get_current_buf()
   if not H.is_open() then H.open_window(Beside.config.width) end
   H.state.source = buf
+  H.create_autocommands(buf)
   H.render()
 end
 
 --- Close the preview
 Beside.close = function()
+  api.nvim_clear_autocmds({ group = H.augroup })
+  H.timer:stop()
   -- Either may be gone already, or be the last window (E444) when the source closes
   if H.is_open() then pcall(api.nvim_win_close, H.state.win, true) end
   if H.state.buf and api.nvim_buf_is_valid(H.state.buf) then
     pcall(api.nvim_buf_delete, H.state.buf, { force = true })
   end
-  H.state = {}
+  H.reset_state()
 end
 
 --- Close the preview when it is open, open it otherwise
@@ -46,8 +52,13 @@ end
 -- Helper data ================================================================
 H.default_config = vim.deepcopy(Beside.config)
 
--- The preview: `win` and `buf` are the preview's, `source` the previewed buffer
-H.state = {}
+H.augroup = api.nvim_create_augroup('beside', {})
+H.timer = vim.uv.new_timer()
+
+-- The preview: `win` and `buf` are the preview's, `source` the previewed
+-- buffer. `run` counts renders so a superseded one is dropped; it is the only
+-- field that survives a close.
+H.state = { run = 0 }
 
 -- Helper functionality =======================================================
 -- Preview window -------------------------------------------------------------
@@ -83,22 +94,56 @@ H.open_window = function(width)
   H.state.buf = buf
 end
 
+H.create_autocommands = function(buf)
+  api.nvim_clear_autocmds({ group = H.augroup })
+  local au = function(event, opts, callback, desc)
+    opts = vim.tbl_extend('force', { group = H.augroup, callback = callback, desc = desc }, opts)
+    api.nvim_create_autocmd(event, opts)
+  end
+
+  au(
+    { 'TextChanged', 'TextChangedI', 'TextChangedP' },
+    { buffer = buf },
+    H.schedule_render,
+    'Re-render'
+  )
+end
+
+H.reset_state = function() H.state = { run = H.state.run } end
+
 -- Rendering ------------------------------------------------------------------
 H.render = function()
   local source = H.state.source
   if not api.nvim_buf_is_valid(source) then return Beside.close() end
 
   local lines = api.nvim_buf_get_lines(source, 0, -1, false)
+  H.state.changedtick = vim.b[source].changedtick
   local width = tostring(H.content_width())
   local command = { 'glow', '-s', vim.o.background, '-w', width, '-' }
+
+  -- Any render still running is superseded: its result is dropped
+  H.state.run = H.state.run + 1
+  local run = H.state.run
   local on_exit = vim.schedule_wrap(function(result)
-    if not H.is_open() then return end
+    if run ~= H.state.run or not H.is_open() then return end
     H.show(result)
   end)
   local stdin = table.concat(lines, '\n') .. '\n'
   -- glow only colors a terminal unless told otherwise
   local env = { CLICOLOR_FORCE = '1' }
   vim.system(command, { stdin = stdin, text = true, env = env }, on_exit)
+end
+
+-- Render shortly after the last change; glow takes ~20 ms, so it feels live
+H.schedule_render = function()
+  H.timer:stop()
+  H.timer:start(Beside.config.delay, 0, vim.schedule_wrap(H.render_if_changed))
+end
+
+H.render_if_changed = function()
+  local source = H.state.source
+  if source == nil or not api.nvim_buf_is_valid(source) then return end
+  if vim.b[source].changedtick ~= H.state.changedtick then H.render() end
 end
 
 -- Replace the preview with the render
