@@ -1,6 +1,7 @@
 --- beside.nvim: a live rendering of the current document beside its buffer.
 
 -- Module definition ==========================================================
+local Ansi = require('beside.ansi')
 local api = vim.api
 
 local Beside = {}
@@ -52,6 +53,7 @@ end
 -- Helper data ================================================================
 H.default_config = vim.deepcopy(Beside.config)
 
+H.ns = api.nvim_create_namespace('beside')
 H.augroup = api.nvim_create_augroup('beside', {})
 H.timer = vim.uv.new_timer()
 
@@ -107,6 +109,7 @@ H.create_autocommands = function(buf)
     H.schedule_render,
     'Re-render'
   )
+  au('ColorScheme', {}, H.render, 'Re-render with the new colors')
 end
 
 H.reset_state = function() H.state = { run = H.state.run } end
@@ -152,14 +155,46 @@ H.show = function(result)
   if result.code ~= 0 then
     output = ('renderer exited with code %d\n%s'):format(result.code, result.stderr or '')
   end
-  -- The text alone for now; the colors are in the escapes
-  output = output:gsub('\27%[[%d;]*m', '')
-  local text = vim.split(output, '\n', { plain = true, trimempty = true })
+  local text = {}
+  local spans = {}
+  for i, line in ipairs(vim.split(output, '\n', { plain = true, trimempty = true })) do
+    text[i], spans[i] = Ansi.parse(line)
+  end
 
   local buf = H.state.buf
   vim.bo[buf].modifiable = true
   api.nvim_buf_set_lines(buf, 0, -1, false, text)
   vim.bo[buf].modifiable = false
+  H.set_highlights(buf, spans)
+end
+
+H.set_highlights = function(buf, spans)
+  api.nvim_buf_clear_namespace(buf, H.ns, 0, -1)
+  for row, line_spans in ipairs(spans) do
+    for _, span in ipairs(line_spans) do
+      local group = H.highlight_group(span.style)
+      api.nvim_buf_set_extmark(
+        buf,
+        H.ns,
+        row - 1,
+        span.from,
+        { end_col = span.to, hl_group = group }
+      )
+    end
+  end
+end
+
+-- A highlight group for an ANSI style, named after its contents so equal
+-- styles share one. Defined again whenever a colorscheme change has cleared it.
+H.highlight_group = function(style)
+  local fg = (style.fg or ''):gsub('#', '')
+  local bg = (style.bg or ''):gsub('#', '')
+  local name = 'Beside_' .. fg .. '_' .. bg
+  for _, attribute in ipairs({ 'bold', 'italic', 'underline', 'strikethrough' }) do
+    if style[attribute] then name = name .. '_' .. attribute:sub(1, 1) end
+  end
+  if vim.tbl_isempty(api.nvim_get_hl(0, { name = name })) then api.nvim_set_hl(0, name, style) end
+  return name
 end
 
 -- Columns for the render; renderers refuse very narrow ones
