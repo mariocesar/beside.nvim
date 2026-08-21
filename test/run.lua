@@ -1,0 +1,70 @@
+-- Unit checks. Exit code 0 means every check passed:
+--   nvim --clean --headless -c 'luafile test/run.lua'
+local root =
+  vim.fs.dirname(vim.fs.dirname(vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p')))
+vim.opt.rtp:prepend(root)
+dofile(root .. '/plugin/beside.lua')
+local Beside = require('beside')
+local Ansi = require('beside.ansi')
+
+local failed = 0
+
+local function check(name, ok, detail)
+  if not ok then failed = failed + 1 end
+  -- the detail explains a failure; a passing check prints its name only
+  local suffix = (not ok and detail) and ('  [' .. tostring(detail) .. ']') or ''
+  print((ok and 'ok   ' or 'FAIL ') .. name .. suffix)
+end
+
+local function contains(text, part) return text ~= nil and text:find(part, 1, true) ~= nil end
+
+local function show(value)
+  return vim.inspect(value, {
+    newline = ' ',
+    indent = '',
+  })
+end
+
+-- Ansi -----------------------------------------------------------------------
+print('-- ansi')
+
+local text, spans =
+  Ansi.parse('\27[1;31mred\27[0m plain \27[38;5;82mgreen\27[0m \27[38;2;1;2;3mtrue\27[m')
+local expected = {
+  {
+    from = 0,
+    to = 3,
+    style = {
+      bold = true,
+      fg = '#800000',
+    },
+  },
+  {
+    from = 10,
+    to = 15,
+    style = {
+      fg = '#5fff00',
+    },
+  },
+  {
+    from = 16,
+    to = 20,
+    style = {
+      fg = '#010203',
+    },
+  },
+}
+check('escapes stripped from the text', text == 'red plain green true', text)
+check('base, 256 and truecolor spans', vim.deep_equal(spans, expected), show(spans))
+
+check('palette: xterm base colors', Ansi.palette(1) == '#800000' and Ansi.palette(15) == '#ffffff')
+check('palette: cube', Ansi.palette(16) == '#000000' and Ansi.palette(231) == '#ffffff')
+check('palette: grays', Ansi.palette(232) == '#080808' and Ansi.palette(255) == '#eeeeee')
+
+vim.g.terminal_color_1 = '#123456'
+check('palette: the colorscheme terminal colors win', Ansi.palette(1) == '#123456')
+vim.g.terminal_color_1 = nil
+
+print('-- results')
+print(failed == 0 and 'all checks passed\n' or failed .. ' checks FAILED\n')
+vim.cmd(failed == 0 and 'qall!' or 'cquit 1')

@@ -35,6 +35,14 @@ require('beside').setup({
 })
 ```
 
+## Development
+
+```sh
+make test          # nvim --clean --headless -c 'luafile test/run.lua'
+```
+
+Tests print one line per check and need no renderer installed.
+
 ## License
 
 MIT
