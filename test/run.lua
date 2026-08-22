@@ -6,6 +6,7 @@ vim.opt.rtp:prepend(root)
 dofile(root .. '/plugin/beside.lua')
 local Beside = require('beside')
 local Ansi = require('beside.ansi')
+local Anchors = require('beside.anchors')
 
 local failed = 0
 
@@ -64,6 +65,53 @@ check('palette: grays', Ansi.palette(232) == '#080808' and Ansi.palette(255) == 
 vim.g.terminal_color_1 = '#123456'
 check('palette: the colorscheme terminal colors win', Ansi.palette(1) == '#123456')
 vim.g.terminal_color_1 = nil
+
+-- Anchors --------------------------------------------------------------------
+print('-- anchors')
+
+local needle = Anchors.needle('- [ ] Read [the docs](http://x) now')
+check('needle: markers and links stripped', needle == 'read the docs now', needle)
+check('needle: nil for a short line', Anchors.needle('# a') == nil)
+check('needle: cut at a word boundary', Anchors.needle('word ' .. ('x'):rep(30)) == 'word')
+
+-- a markdown table rendered as a box: 7 source lines become 10
+local source = {
+  '# Title',
+  '',
+  'Para one',
+  '| alpha | beta |',
+  '|---|---|',
+  '| gamma | delta |',
+  'Last line here',
+}
+local rendered = {
+  'Title',
+  '',
+  'Para one',
+  '┌───────┬───────┐',
+  '│ alpha │ beta  │',
+  '├───────┼───────┤',
+  '│ gamma │ delta │',
+  '└───────┴───────┘',
+  '',
+  'Last line here',
+}
+local anchors = Anchors.find(source, rendered)
+local first = anchors[1]
+local last = anchors[#anchors]
+check(
+  'anchors: sentinels at both ends',
+  first.source == 1 and first.preview == 1 and last.source == 7 and last.preview == 10,
+  show(anchors)
+)
+check('anchors: first table row found', Anchors.to_preview(anchors, 4) == 5)
+check('anchors: last table row found', Anchors.to_preview(anchors, 6) == 7)
+check('anchors: interpolated between matches', Anchors.to_preview(anchors, 5) == 6)
+check('anchors: reverse lookup of a row', Anchors.to_source(anchors, 7) == 6)
+check('anchors: reverse lookup of the last line', Anchors.to_source(anchors, 10) == 7)
+
+local identity = Anchors.find(source, source)
+check('anchors: identity when nothing changed', Anchors.to_preview(identity, 5) == 5)
 
 print('-- results')
 print(failed == 0 and 'all checks passed\n' or failed .. ' checks FAILED\n')

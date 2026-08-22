@@ -2,6 +2,7 @@
 
 -- Module definition ==========================================================
 local Ansi = require('beside.ansi')
+local Anchors = require('beside.anchors')
 local api = vim.api
 
 local Beside = {}
@@ -58,9 +59,10 @@ H.augroup = api.nvim_create_augroup('beside', {})
 H.timer = vim.uv.new_timer()
 
 -- The preview: `win` and `buf` are the preview's, `source` the previewed
--- buffer. `run` counts renders so a superseded one is dropped; it is the only
--- field that survives a close.
-H.state = { run = 0 }
+-- buffer, `anchors` where its lines were found in the render. `run` counts
+-- renders so a superseded one is dropped; it is the only field that survives
+-- a close.
+H.state = { run = 0, anchors = {} }
 
 -- Helper functionality =======================================================
 -- Preview window -------------------------------------------------------------
@@ -78,13 +80,14 @@ H.open_window = function(width)
   local win = api.nvim_get_current_win()
   api.nvim_win_set_buf(win, buf)
 
-  -- Plain reading: no gutter, no cursor line
+  -- Plain reading: no gutter, no cursor line. 'scrolloff' 0 so the topline sync sets holds.
   local options = {
     number = false,
     relativenumber = false,
     signcolumn = 'no',
     list = false,
     cursorline = false,
+    scrolloff = 0,
     spell = false,
   }
   for option, value in pairs(options) do
@@ -103,6 +106,7 @@ H.create_autocommands = function(buf)
     api.nvim_create_autocmd(event, opts)
   end
 
+  au({ 'CursorMoved', 'CursorMovedI' }, { buffer = buf }, H.sync_preview, 'Follow the cursor')
   au(
     { 'TextChanged', 'TextChangedI', 'TextChangedP' },
     { buffer = buf },
@@ -112,7 +116,7 @@ H.create_autocommands = function(buf)
   au('ColorScheme', {}, H.render, 'Re-render with the new colors')
 end
 
-H.reset_state = function() H.state = { run = H.state.run } end
+H.reset_state = function() H.state = { run = H.state.run, anchors = {} } end
 
 -- Rendering ------------------------------------------------------------------
 H.render = function()
@@ -129,7 +133,7 @@ H.render = function()
   local run = H.state.run
   local on_exit = vim.schedule_wrap(function(result)
     if run ~= H.state.run or not H.is_open() then return end
-    H.show(result)
+    H.show(lines, result)
   end)
   local stdin = table.concat(lines, '\n') .. '\n'
   -- glow only colors a terminal unless told otherwise
@@ -149,8 +153,8 @@ H.render_if_changed = function()
   if vim.b[source].changedtick ~= H.state.changedtick then H.render() end
 end
 
--- Replace the preview with the render
-H.show = function(result)
+-- Replace the preview with the render of these source lines
+H.show = function(source_lines, result)
   local output = result.stdout or ''
   if result.code ~= 0 then
     output = ('renderer exited with code %d\n%s'):format(result.code, result.stderr or '')
@@ -166,6 +170,9 @@ H.show = function(result)
   api.nvim_buf_set_lines(buf, 0, -1, false, text)
   vim.bo[buf].modifiable = false
   H.set_highlights(buf, spans)
+
+  H.state.anchors = Anchors.find(source_lines, text)
+  H.sync_preview()
 end
 
 H.set_highlights = function(buf, spans)
@@ -199,5 +206,26 @@ end
 
 -- Columns for the render; renderers refuse very narrow ones
 H.content_width = function() return math.max(20, api.nvim_win_get_width(H.state.win) - 1) end
+
+-- Sync -----------------------------------------------------------------------
+H.can_sync = function()
+  return H.is_open() and api.nvim_buf_is_valid(H.state.source) and #H.state.anchors > 0
+end
+
+-- Scroll the preview so the cursor's line sits at the cursor's screen row
+H.sync_preview = function()
+  if not H.can_sync() or api.nvim_get_current_buf() ~= H.state.source then return end
+
+  local line = api.nvim_win_get_cursor(0)[1]
+  local target = Anchors.to_preview(H.state.anchors, line)
+  target = math.max(1, math.min(target, api.nvim_buf_line_count(H.state.buf)))
+  local row = vim.fn.winline()
+  api.nvim_win_call(
+    H.state.win,
+    function()
+      vim.fn.winrestview({ lnum = target, col = 0, topline = math.max(1, target - row + 1) })
+    end
+  )
+end
 
 return Beside

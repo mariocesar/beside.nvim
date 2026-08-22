@@ -19,7 +19,10 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim):
 ## Use
 
 `:Beside` opens the preview for the current buffer, `:Beside` again closes it.
-Edits re-render 100 ms after you stop typing, unsaved.
+While the preview is open:
+
+- moving in the source keeps the preview at the same place
+- edits re-render 100 ms after you stop typing, unsaved
 
 ## Configuration
 
@@ -34,6 +37,14 @@ require('beside').setup({
   delay = 100,
 })
 ```
+
+## How the sync works
+
+Renderers change the line count: a table becomes a box, a paragraph wraps, a
+code block grows a frame. There is no line-for-line map, so beside matches the
+text of each source line to the rendered output and interpolates between
+matches. Headings, list items, code lines and table cells anchor exactly;
+inside a wrapped paragraph the preview lands within a line or two.
 
 ## Development
 
