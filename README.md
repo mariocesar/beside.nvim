@@ -21,7 +21,8 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim):
 `:Beside` opens the preview for the current buffer, `:Beside` again closes it.
 While the preview is open:
 
-- moving in the source keeps the preview at the same place
+- moving or scrolling in the source keeps the preview at the same place, and
+  scrolling the preview scrolls the source
 - edits re-render 100 ms after you stop typing, unsaved
 
 ## Configuration

@@ -113,10 +113,22 @@ H.create_autocommands = function(buf)
     H.schedule_render,
     'Re-render'
   )
+  au('WinScrolled', {}, H.on_scroll, 'Sync a scroll on either side')
   au('ColorScheme', {}, H.render, 'Re-render with the new colors')
 end
 
 H.reset_state = function() H.state = { run = H.state.run, anchors = {} } end
+
+H.on_scroll = function()
+  local preview_scrolled = vim.v.event[tostring(H.state.win)] ~= nil
+  if preview_scrolled then
+    -- Only a scroll made in the preview, not the one sync_preview() set
+    local top = api.nvim_win_call(H.state.win, vim.fn.winsaveview).topline
+    if top ~= H.state.preview_top then H.follow_source() end
+  elseif vim.v.event[tostring(api.nvim_get_current_win())] then
+    H.sync_preview()
+  end
+end
 
 -- Rendering ------------------------------------------------------------------
 H.render = function()
@@ -172,7 +184,7 @@ H.show = function(source_lines, result)
   H.set_highlights(buf, spans)
 
   H.state.anchors = Anchors.find(source_lines, text)
-  H.sync_preview()
+  H.sync_preview(true)
 end
 
 H.set_highlights = function(buf, spans)
@@ -212,20 +224,45 @@ H.can_sync = function()
   return H.is_open() and api.nvim_buf_is_valid(H.state.source) and #H.state.anchors > 0
 end
 
--- Scroll the preview so the cursor's line sits at the cursor's screen row
-H.sync_preview = function()
+-- Scroll the preview so the cursor's line sits at the cursor's screen row.
+-- Each side records the view it set on the other (`preview_top`, `source_view`)
+-- so the WinScrolled it causes there is not synced straight back.
+H.sync_preview = function(force)
   if not H.can_sync() or api.nvim_get_current_buf() ~= H.state.source then return end
+  if force ~= true and H.view_key(0) == H.state.source_view then return end
+  H.state.source_view = nil
 
   local line = api.nvim_win_get_cursor(0)[1]
   local target = Anchors.to_preview(H.state.anchors, line)
   target = math.max(1, math.min(target, api.nvim_buf_line_count(H.state.buf)))
   local row = vim.fn.winline()
-  api.nvim_win_call(
-    H.state.win,
-    function()
-      vim.fn.winrestview({ lnum = target, col = 0, topline = math.max(1, target - row + 1) })
-    end
-  )
+  api.nvim_win_call(H.state.win, function()
+    vim.fn.winrestview({ lnum = target, col = 0, topline = math.max(1, target - row + 1) })
+    H.state.preview_top = vim.fn.winsaveview().topline
+  end)
+end
+
+-- Scroll the source so the line at the preview's top sits at the source's top
+H.follow_source = function()
+  local source_win = vim.fn.bufwinid(H.state.source)
+  if not H.can_sync() or source_win == -1 then return end
+
+  local top = api.nvim_win_call(H.state.win, vim.fn.winsaveview).topline
+  local target = Anchors.to_source(H.state.anchors, top)
+  target = math.max(1, math.min(target, api.nvim_buf_line_count(H.state.source)))
+  api.nvim_win_call(source_win, function()
+    -- <C-e>/<C-y> drag the cursor along; setting topline alone would not
+    local delta = target - vim.fn.winsaveview().topline
+    if delta > 0 then vim.cmd('normal! ' .. delta .. vim.keycode('<C-e>')) end
+    if delta < 0 then vim.cmd('normal! ' .. -delta .. vim.keycode('<C-y>')) end
+    H.state.source_view = H.view_key(0)
+  end)
+  H.state.preview_top = top
+end
+
+H.view_key = function(win)
+  local view = api.nvim_win_call(win, vim.fn.winsaveview)
+  return view.topline .. ':' .. view.lnum
 end
 
 return Beside
