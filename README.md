@@ -24,6 +24,9 @@ While the preview is open:
 - moving or scrolling in the source keeps the preview at the same place, and
   scrolling the preview scrolls the source
 - edits re-render 100 ms after you stop typing, unsaved
+- opening another document in the same tab moves the preview to it; when no
+  window shows the document any more, the preview closes
+- `q` in the preview closes it
 
 ## Configuration
 

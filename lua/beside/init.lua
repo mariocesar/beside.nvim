@@ -24,13 +24,12 @@ Beside.config = {
 }
 
 -- Module functionality =======================================================
---- Open the preview for the current buffer
+--- Open the preview for the current buffer, or move it here when it is open
+--- for another one.
 Beside.open = function()
   local buf = api.nvim_get_current_buf()
   if not H.is_open() then H.open_window(Beside.config.width) end
-  H.state.source = buf
-  H.create_autocommands(buf)
-  H.render()
+  H.attach(buf)
 end
 
 --- Close the preview
@@ -45,9 +44,13 @@ Beside.close = function()
   H.reset_state()
 end
 
---- Close the preview when it is open, open it otherwise
+--- Close the preview when the current buffer is the previewed one or the
+--- preview itself, open it otherwise.
 Beside.toggle = function()
-  if H.is_open() then return Beside.close() end
+  local buf = api.nvim_get_current_buf()
+  local is_preview = H.is_open() and buf == H.state.buf
+  local is_source = H.is_open() and buf == H.state.source
+  if is_preview or is_source then return Beside.close() end
   Beside.open()
 end
 
@@ -93,10 +96,24 @@ H.open_window = function(width)
   for option, value in pairs(options) do
     vim.wo[win][option] = value
   end
+  vim.keymap.set('n', 'q', Beside.close, { buffer = buf, desc = 'Close the preview' })
 
   api.nvim_set_current_win(source_win)
   H.state.win = win
   H.state.buf = buf
+end
+
+-- Preview `buf`: sync both ways, render on change, close with it
+H.attach = function(buf)
+  H.state.source = buf
+  H.state.anchors = {}
+  H.state.source_view = nil
+  H.state.preview_top = nil
+
+  local name = vim.fn.fnamemodify(api.nvim_buf_get_name(buf), ':t')
+  api.nvim_buf_set_name(H.state.buf, 'beside://' .. name)
+  H.create_autocommands(buf)
+  H.render()
 end
 
 H.create_autocommands = function(buf)
@@ -114,7 +131,12 @@ H.create_autocommands = function(buf)
     'Re-render'
   )
   au('WinScrolled', {}, H.on_scroll, 'Sync a scroll on either side')
+  au({ 'WinResized', 'VimResized' }, {}, H.on_resize, 'Re-render at the new width')
   au('ColorScheme', {}, H.render, 'Re-render with the new colors')
+  au('BufEnter', {}, H.on_buf_enter, 'Move along to a document opened beside')
+  au('BufWinLeave', { buffer = buf }, H.on_source_hidden, 'Close when the source is gone')
+  au('QuitPre', { buffer = buf }, Beside.close, 'Close with the source')
+  au('WinClosed', { pattern = tostring(H.state.win) }, H.on_preview_closed, 'Clean up after :q')
 end
 
 H.reset_state = function() H.state = { run = H.state.run, anchors = {} } end
@@ -130,6 +152,31 @@ H.on_scroll = function()
   end
 end
 
+H.on_resize = function()
+  if H.can_sync() and H.content_width() ~= H.state.width then H.render() end
+end
+
+-- The preview moves along to a markdown document opened beside it
+H.on_buf_enter = function(event)
+  local buf = event.buf
+  if not H.is_open() or buf == H.state.source or buf == H.state.buf then return end
+  if api.nvim_win_get_tabpage(0) ~= api.nvim_win_get_tabpage(H.state.win) then return end
+  if vim.bo[buf].filetype == 'markdown' then H.attach(buf) end
+end
+
+-- Checked after the event, since BufEnter may have moved the preview along
+H.on_source_hidden = function()
+  vim.schedule(function()
+    if H.is_open() and #vim.fn.win_findbuf(H.state.source) == 0 then Beside.close() end
+  end)
+end
+
+-- The window is going away on its own
+H.on_preview_closed = function()
+  H.state.win = nil
+  Beside.close()
+end
+
 -- Rendering ------------------------------------------------------------------
 H.render = function()
   local source = H.state.source
@@ -137,8 +184,8 @@ H.render = function()
 
   local lines = api.nvim_buf_get_lines(source, 0, -1, false)
   H.state.changedtick = vim.b[source].changedtick
-  local width = tostring(H.content_width())
-  local command = { 'glow', '-s', vim.o.background, '-w', width, '-' }
+  H.state.width = H.content_width()
+  local command = { 'glow', '-s', vim.o.background, '-w', tostring(H.state.width), '-' }
 
   -- Any render still running is superseded: its result is dropped
   H.state.run = H.state.run + 1
