@@ -42,6 +42,16 @@ require('beside').setup({
 })
 ```
 
+### Per filetype
+
+A buffer can override the settings in `vim.b.beside_config`, a table of the
+same shape. Set one in `after/ftplugin/<filetype>.lua` to configure a filetype:
+
+```lua
+-- after/ftplugin/markdown.lua
+vim.b.beside_config = { width = 0.5 }
+```
+
 ## How the sync works
 
 Renderers change the line count: a table becomes a box, a paragraph wraps, a

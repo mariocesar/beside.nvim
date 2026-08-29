@@ -8,13 +8,16 @@ local api = vim.api
 local Beside = {}
 local H = {}
 
---- Merge `config` over the defaults. Optional: the defaults apply without it.
+--- Merge `config` over the defaults, checking types. Optional: the defaults
+--- apply without it.
 ---@param config table|nil See |Beside.config|.
 Beside.setup = function(config)
-  Beside.config = vim.tbl_deep_extend('force', vim.deepcopy(H.default_config), config or {})
+  config = H.setup_config(config)
+  H.apply_config(config)
 end
 
---- Defaults
+--- Defaults. User settings deep-merge into them. The README repeats this
+--- table, keep it in step.
 Beside.config = {
   -- Preview width: fraction of the screen, or a column count when 2 or more
   width = 0.4,
@@ -28,7 +31,8 @@ Beside.config = {
 --- for another one.
 Beside.open = function()
   local buf = api.nvim_get_current_buf()
-  if not H.is_open() then H.open_window(Beside.config.width) end
+  local config = H.get_config(buf)
+  if not H.is_open() then H.open_window(config.width) end
   H.attach(buf)
 end
 
@@ -68,6 +72,25 @@ H.timer = vim.uv.new_timer()
 H.state = { run = 0, anchors = {} }
 
 -- Helper functionality =======================================================
+-- Settings -------------------------------------------------------------------
+H.setup_config = function(config)
+  H.check_type('config', config, 'table', true)
+  config = vim.tbl_deep_extend('force', vim.deepcopy(H.default_config), config or {})
+
+  H.check_type('width', config.width, 'number')
+  H.check_type('delay', config.delay, 'number')
+
+  return config
+end
+
+H.apply_config = function(config) Beside.config = config end
+
+-- The config for a buffer: its `vim.b.beside_config` over the global one
+H.get_config = function(buf)
+  local local_config = vim.b[buf].beside_config or {}
+  return vim.tbl_deep_extend('force', Beside.config, local_config)
+end
+
 -- Preview window -------------------------------------------------------------
 H.is_open = function() return H.state.win ~= nil and api.nvim_win_is_valid(H.state.win) end
 
@@ -203,7 +226,7 @@ end
 -- Render shortly after the last change; glow takes ~20 ms, so it feels live
 H.schedule_render = function()
   H.timer:stop()
-  H.timer:start(Beside.config.delay, 0, vim.schedule_wrap(H.render_if_changed))
+  H.timer:start(H.get_config(H.state.source).delay, 0, vim.schedule_wrap(H.render_if_changed))
 end
 
 H.render_if_changed = function()
@@ -310,6 +333,14 @@ end
 H.view_key = function(win)
   local view = api.nvim_win_call(win, vim.fn.winsaveview)
   return view.topline .. ':' .. view.lnum
+end
+
+-- Utilities ------------------------------------------------------------------
+H.error = function(msg) error('(beside) ' .. msg, 0) end
+
+H.check_type = function(name, val, ref, allow_nil)
+  if type(val) == ref or (allow_nil and val == nil) then return end
+  H.error(('`%s` should be %s, not %s'):format(name, ref, type(val)))
 end
 
 return Beside

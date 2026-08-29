@@ -113,6 +113,25 @@ check('anchors: reverse lookup of the last line', Anchors.to_source(anchors, 10)
 local identity = Anchors.find(source, source)
 check('anchors: identity when nothing changed', Anchors.to_preview(identity, 5) == 5)
 
+-- Config ---------------------------------------------------------------------
+print('-- config')
+
+local ok, err = pcall(Beside.setup, {
+  width = 'wide',
+})
+check('a wrong type is rejected by name', not ok and contains(err, 'width'), err)
+
+Beside.setup({
+  width = 30,
+})
+check(
+  'a setting merges over the defaults',
+  Beside.config.width == 30 and Beside.config.delay == 100
+)
+
+Beside.setup({})
+check('setup() resets to the defaults', Beside.config.width == 0.4)
+
 print('-- results')
 print(failed == 0 and 'all checks passed\n' or failed .. ' checks FAILED\n')
 vim.cmd(failed == 0 and 'qall!' or 'cquit 1')
