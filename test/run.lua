@@ -121,16 +121,51 @@ local ok, err = pcall(Beside.setup, {
 })
 check('a wrong type is rejected by name', not ok and contains(err, 'width'), err)
 
-Beside.setup({
-  width = 30,
+ok, err = pcall(Beside.setup, {
+  renderers = {
+    broken = {
+      filetypes = {
+        markdown = true,
+      },
+    },
+  },
 })
 check(
-  'a setting merges over the defaults',
-  Beside.config.width == 30 and Beside.config.delay == 100
+  'a renderer without a command is rejected',
+  not ok and contains(err, 'renderers.broken.command'),
+  err
 )
 
+Beside.setup({
+  prefer = {
+    markdown = { 'glow' },
+  },
+})
+local prefer = Beside.config.prefer.markdown
+check('lists replace, they do not merge', vim.deep_equal(prefer, { 'glow' }), show(prefer))
+
+local mdcat = {
+  filetypes = {
+    markdown = true,
+  },
+  command = function() return { 'mdcat' } end,
+}
+Beside.setup({
+  renderers = {
+    mdcat = mdcat,
+    glow = {
+      style = 'dracula',
+    },
+  },
+})
+local renderers = Beside.config.renderers
+check('a renderer is added beside the builtins', renderers.mdcat and renderers.leaf)
+check('an option merges into a builtin', renderers.glow.style == 'dracula')
+check('the merged builtin keeps its command', renderers.glow.command ~= nil)
+
 Beside.setup({})
-check('setup() resets to the defaults', Beside.config.width == 0.4)
+renderers = Beside.config.renderers
+check('setup() resets to the defaults', renderers.mdcat == nil and renderers.glow.style == nil)
 
 print('-- results')
 print(failed == 0 and 'all checks passed\n' or failed .. ' checks FAILED\n')

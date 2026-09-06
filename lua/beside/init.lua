@@ -1,4 +1,5 @@
---- beside.nvim: a live rendering of the current document beside its buffer.
+--- beside.nvim: a live rendering of the current document beside its buffer,
+--- by leaf, glow, pandoc or any renderer added as a table entry.
 
 -- Module definition ==========================================================
 local Ansi = require('beside.ansi')
@@ -16,14 +17,22 @@ Beside.setup = function(config)
   H.apply_config(config)
 end
 
---- Defaults. User settings deep-merge into them. The README repeats this
---- table, keep it in step.
+--- Defaults. User settings deep-merge into them; lists replace. The README
+--- repeats this table, keep it in step.
 Beside.config = {
   -- Preview width: fraction of the screen, or a column count when 2 or more
   width = 0.4,
 
   -- Milliseconds after the last change before re-rendering
   delay = 100,
+
+  -- Renderers to try first, per filetype
+  prefer = {
+    markdown = { 'leaf', 'glow', 'pandoc' },
+  },
+
+  -- Renderers by name; the builtins live in lua/beside/renderers.lua
+  renderers = require('beside.renderers'),
 }
 
 -- Module functionality =======================================================
@@ -32,6 +41,8 @@ Beside.config = {
 Beside.open = function()
   local buf = api.nvim_get_current_buf()
   local config = H.get_config(buf)
+  local name, _, message = H.resolve(config, vim.bo[buf].filetype)
+  if name == nil then return H.notify(message, vim.log.levels.ERROR) end
   if not H.is_open() then H.open_window(config.width) end
   H.attach(buf)
 end
@@ -79,6 +90,16 @@ H.setup_config = function(config)
 
   H.check_type('width', config.width, 'number')
   H.check_type('delay', config.delay, 'number')
+  H.check_type('prefer', config.prefer, 'table')
+  H.check_type('renderers', config.renderers, 'table')
+  for name, renderer in pairs(config.renderers) do
+    local field = 'renderers.' .. name
+    H.check_type(field, renderer, 'table')
+    H.check_type(field .. '.filetypes', renderer.filetypes, 'table')
+    H.check_type(field .. '.command', renderer.command, 'callable')
+    H.check_type(field .. '.env', renderer.env, 'table', true)
+    H.check_type(field .. '.executable', renderer.executable, 'string', true)
+  end
 
   return config
 end
@@ -90,6 +111,51 @@ H.get_config = function(buf)
   local local_config = vim.b[buf].beside_config or {}
   return vim.tbl_deep_extend('force', Beside.config, local_config)
 end
+
+-- Renderers ------------------------------------------------------------------
+H.renders = function(renderer, filetype)
+  return type(renderer.filetypes) == 'table' and renderer.filetypes[filetype] ~= nil
+end
+
+H.is_installed = function(name, renderer)
+  local executable = renderer.executable or name
+  return vim.fn.executable(executable) == 1
+end
+
+-- Renderer names to try for a filetype: `prefer` first, then the rest declaring it, by name
+H.candidates = function(config, filetype)
+  local names = {}
+  local seen = {}
+  for _, name in ipairs(config.prefer[filetype] or {}) do
+    local renderer = config.renderers[name]
+    if renderer and H.renders(renderer, filetype) and not seen[name] then
+      names[#names + 1] = name
+      seen[name] = true
+    end
+  end
+  local rest = {}
+  for name, renderer in pairs(config.renderers) do
+    if H.renders(renderer, filetype) and not seen[name] then rest[#rest + 1] = name end
+  end
+  table.sort(rest)
+  return vim.list_extend(names, rest)
+end
+
+-- The renderer for a filetype: the first installed candidate. Returns nil and
+-- a message when there is none.
+H.resolve = function(config, filetype)
+  local label = filetype == '' and 'this buffer' or filetype .. ' files'
+  local candidates = H.candidates(config, filetype)
+  for _, candidate in ipairs(candidates) do
+    local renderer = config.renderers[candidate]
+    if H.is_installed(candidate, renderer) then return candidate, renderer end
+  end
+  if #candidates == 0 then return nil, nil, ('beside: no renderer for %s'):format(label) end
+  local list = table.concat(candidates, ', ')
+  return nil, nil, ('beside: rendering %s needs one of: %s'):format(filetype, list)
+end
+
+H.can_render = function(buf) return H.resolve(H.get_config(buf), vim.bo[buf].filetype) ~= nil end
 
 -- Preview window -------------------------------------------------------------
 H.is_open = function() return H.state.win ~= nil and api.nvim_win_is_valid(H.state.win) end
@@ -179,12 +245,12 @@ H.on_resize = function()
   if H.can_sync() and H.content_width() ~= H.state.width then H.render() end
 end
 
--- The preview moves along to a markdown document opened beside it
+-- The preview moves along to a document opened beside it
 H.on_buf_enter = function(event)
   local buf = event.buf
   if not H.is_open() or buf == H.state.source or buf == H.state.buf then return end
   if api.nvim_win_get_tabpage(0) ~= api.nvim_win_get_tabpage(H.state.win) then return end
-  if vim.bo[buf].filetype == 'markdown' then H.attach(buf) end
+  if H.can_render(buf) then H.attach(buf) end
 end
 
 -- Checked after the event, since BufEnter may have moved the preview along
@@ -204,11 +270,21 @@ end
 H.render = function()
   local source = H.state.source
   if not api.nvim_buf_is_valid(source) then return Beside.close() end
+  local filetype = vim.bo[source].filetype
+  local name, renderer = H.resolve(H.get_config(source), filetype)
+  if name == nil then return Beside.close() end
 
   local lines = api.nvim_buf_get_lines(source, 0, -1, false)
   H.state.changedtick = vim.b[source].changedtick
   H.state.width = H.content_width()
-  local command = { 'glow', '-s', vim.o.background, '-w', tostring(H.state.width), '-' }
+  local format = renderer.filetypes[filetype]
+  local context = {
+    filetype = filetype,
+    format = format == true and filetype or format,
+    width = H.state.width,
+    background = vim.o.background,
+    renderer = renderer,
+  }
 
   -- Any render still running is superseded: its result is dropped
   H.state.run = H.state.run + 1
@@ -218,12 +294,10 @@ H.render = function()
     H.show(lines, result)
   end)
   local stdin = table.concat(lines, '\n') .. '\n'
-  -- glow only colors a terminal unless told otherwise
-  local env = { CLICOLOR_FORCE = '1' }
-  vim.system(command, { stdin = stdin, text = true, env = env }, on_exit)
+  vim.system(renderer.command(context), { stdin = stdin, text = true, env = renderer.env }, on_exit)
 end
 
--- Render shortly after the last change; glow takes ~20 ms, so it feels live
+-- Render shortly after the last change; renderers take ~20 ms, so it feels live
 H.schedule_render = function()
   H.timer:stop()
   H.timer:start(H.get_config(H.state.source).delay, 0, vim.schedule_wrap(H.render_if_changed))
@@ -339,8 +413,16 @@ end
 H.error = function(msg) error('(beside) ' .. msg, 0) end
 
 H.check_type = function(name, val, ref, allow_nil)
-  if type(val) == ref or (allow_nil and val == nil) then return end
+  if
+    type(val) == ref
+    or (ref == 'callable' and vim.is_callable(val))
+    or (allow_nil and val == nil)
+  then
+    return
+  end
   H.error(('`%s` should be %s, not %s'):format(name, ref, type(val)))
 end
+
+H.notify = function(msg, level) vim.notify(msg, level) end
 
 return Beside
