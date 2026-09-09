@@ -30,7 +30,7 @@ end
 print('-- ansi')
 
 local text, spans =
-  Ansi.parse('\27[1;31mred\27[0m plain \27[38;5;82mgreen\27[0m \27[38;2;1;2;3mtrue\27[m')
+  Ansi.parse('\27[1;31mred\27[0m plain \27[38;5;82mgreen\27[39m \27[38;2;1;2;3mtrue\27[m')
 local expected = {
   {
     from = 0,
@@ -57,6 +57,38 @@ local expected = {
 }
 check('escapes stripped from the text', text == 'red plain green true', text)
 check('base, 256 and truecolor spans', vim.deep_equal(spans, expected), show(spans))
+
+text, spans = Ansi.parse('\27[1;3mboth\27[22m italic only')
+expected = {
+  {
+    from = 0,
+    to = 4,
+    style = {
+      bold = true,
+      italic = true,
+    },
+  },
+  {
+    from = 4,
+    to = 16,
+    style = {
+      italic = true,
+    },
+  },
+}
+check('an off-code drops one attribute', vim.deep_equal(spans, expected), show(spans))
+
+text, spans = Ansi.parse('\27]8;;https://x.y\7link\27]8;;\7 \27[4mu\27[24m')
+expected = { {
+  from = 5,
+  to = 6,
+  style = {
+    underline = true,
+  },
+} }
+
+check('OSC hyperlinks are stripped', text == 'link u', text)
+check('styles around a hyperlink still apply', vim.deep_equal(spans, expected), show(spans))
 
 check('palette: xterm base colors', Ansi.palette(1) == '#800000' and Ansi.palette(15) == '#ffffff')
 check('palette: cube', Ansi.palette(16) == '#000000' and Ansi.palette(231) == '#ffffff')
