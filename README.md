@@ -28,8 +28,9 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ## Use
 
-`:Beside` toggles the preview for the current buffer. While the preview is
-open:
+`:Beside` toggles the preview for the current buffer. `:Beside glow` opens it
+with that renderer, or switches to it; renderer names complete. While the
+preview is open:
 
 - moving or scrolling in the source keeps the preview at the same place, and
   scrolling the preview scrolls the source

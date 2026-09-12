@@ -38,13 +38,15 @@ Beside.config = {
 -- Module functionality =======================================================
 --- Open the preview for the current buffer, or move it here when it is open
 --- for another one.
-Beside.open = function()
+---@param opts { renderer?: string }|nil A renderer name to use instead of the preferred one.
+Beside.open = function(opts)
+  opts = opts or {}
   local buf = api.nvim_get_current_buf()
   local config = H.get_config(buf)
-  local name, _, message = H.resolve(config, vim.bo[buf].filetype)
+  local name, _, message = H.resolve(config, vim.bo[buf].filetype, opts.renderer)
   if name == nil then return H.notify(message, vim.log.levels.ERROR) end
   if not H.is_open() then H.open_window(config.width) end
-  H.attach(buf)
+  H.attach(buf, opts.renderer)
 end
 
 --- Close the preview
@@ -60,13 +62,43 @@ Beside.close = function()
 end
 
 --- Close the preview when the current buffer is the previewed one or the
---- preview itself, open it otherwise.
-Beside.toggle = function()
+--- preview itself, open it otherwise. With `opts.renderer`, the previewed
+--- buffer is rendered again with that renderer instead of closing.
+---@param opts { renderer?: string }|nil As in |Beside.open()|.
+Beside.toggle = function(opts)
+  opts = opts or {}
   local buf = api.nvim_get_current_buf()
   local is_preview = H.is_open() and buf == H.state.buf
   local is_source = H.is_open() and buf == H.state.source
-  if is_preview or is_source then return Beside.close() end
-  Beside.open()
+  if is_preview or (is_source and opts.renderer == nil) then return Beside.close() end
+  Beside.open(opts)
+end
+
+--- The preview, or nil when it is closed
+---@return { win: integer, buf: integer, source: integer, renderer: string|nil }|nil
+Beside.get_preview = function()
+  if not H.is_open() then return nil end
+  return {
+    win = H.state.win,
+    buf = H.state.buf,
+    source = H.state.source,
+    renderer = H.state.renderer,
+  }
+end
+
+--- The renderer for a filetype: the first installed one among the candidates,
+--- those in `config.prefer` for it, in order, then any other declaring it, by
+--- name.
+---@param filetype string
+---@param opts { name?: string, buf?: integer }|nil `name` picks a renderer, if
+---   it can; `buf` is a buffer whose local config to honour.
+---@return string|nil name nil when nothing renders it
+---@return table|nil renderer Its entry in `config.renderers`.
+---@return string|nil message What is missing.
+Beside.get_renderer = function(filetype, opts)
+  opts = opts or {}
+  local config = opts.buf and H.get_config(opts.buf) or Beside.config
+  return H.resolve(config, filetype, opts.name)
 end
 
 -- Helper data ================================================================
@@ -77,9 +109,9 @@ H.augroup = api.nvim_create_augroup('beside', {})
 H.timer = vim.uv.new_timer()
 
 -- The preview: `win` and `buf` are the preview's, `source` the previewed
--- buffer, `anchors` where its lines were found in the render. `run` counts
--- renders so a superseded one is dropped; it is the only field that survives
--- a close.
+-- buffer, `forced` a renderer name given to :Beside, `renderer` the one that
+-- rendered last. `run` counts renders so a superseded one is dropped; it is the
+-- only field that survives a close.
 H.state = { run = 0, anchors = {} }
 
 -- Helper functionality =======================================================
@@ -141,10 +173,22 @@ H.candidates = function(config, filetype)
   return vim.list_extend(names, rest)
 end
 
--- The renderer for a filetype: the first installed candidate. Returns nil and
--- a message when there is none.
-H.resolve = function(config, filetype)
+-- The renderer for a filetype: `name` when given and able, otherwise the first
+-- installed candidate. Returns nil and a message when there is none.
+H.resolve = function(config, filetype, name)
   local label = filetype == '' and 'this buffer' or filetype .. ' files'
+  if name ~= nil then
+    local renderer = config.renderers[name]
+    if renderer == nil then return nil, nil, ('beside: no renderer named %s'):format(name) end
+    if not H.renders(renderer, filetype) then
+      return nil, nil, ('beside: %s does not render %s'):format(name, label)
+    end
+    if not H.is_installed(name, renderer) then
+      return nil, nil, ('beside: %s needs `%s` on $PATH'):format(name, renderer.executable or name)
+    end
+    return name, renderer
+  end
+
   local candidates = H.candidates(config, filetype)
   for _, candidate in ipairs(candidates) do
     local renderer = config.renderers[candidate]
@@ -193,8 +237,10 @@ H.open_window = function(width)
 end
 
 -- Preview `buf`: sync both ways, render on change, close with it
-H.attach = function(buf)
+H.attach = function(buf, forced)
   H.state.source = buf
+  H.state.forced = forced
+  H.state.renderer = nil
   H.state.anchors = {}
   H.state.source_view = nil
   H.state.preview_top = nil
@@ -250,7 +296,7 @@ H.on_buf_enter = function(event)
   local buf = event.buf
   if not H.is_open() or buf == H.state.source or buf == H.state.buf then return end
   if api.nvim_win_get_tabpage(0) ~= api.nvim_win_get_tabpage(H.state.win) then return end
-  if H.can_render(buf) then H.attach(buf) end
+  if H.can_render(buf) then H.attach(buf, nil) end
 end
 
 -- Checked after the event, since BufEnter may have moved the preview along
@@ -271,7 +317,7 @@ H.render = function()
   local source = H.state.source
   if not api.nvim_buf_is_valid(source) then return Beside.close() end
   local filetype = vim.bo[source].filetype
-  local name, renderer = H.resolve(H.get_config(source), filetype)
+  local name, renderer = H.resolve(H.get_config(source), filetype, H.state.forced)
   if name == nil then return Beside.close() end
 
   local lines = api.nvim_buf_get_lines(source, 0, -1, false)
@@ -291,7 +337,7 @@ H.render = function()
   local run = H.state.run
   local on_exit = vim.schedule_wrap(function(result)
     if run ~= H.state.run or not H.is_open() then return end
-    H.show(lines, result)
+    H.show(lines, result, name)
   end)
   local stdin = table.concat(lines, '\n') .. '\n'
   vim.system(renderer.command(context), { stdin = stdin, text = true, env = renderer.env }, on_exit)
@@ -310,7 +356,7 @@ H.render_if_changed = function()
 end
 
 -- Replace the preview with the render of these source lines
-H.show = function(source_lines, result)
+H.show = function(source_lines, result, name)
   local output = result.stdout or ''
   if result.code ~= 0 then
     output = ('renderer exited with code %d\n%s'):format(result.code, result.stderr or '')
@@ -328,7 +374,10 @@ H.show = function(source_lines, result)
   H.set_highlights(buf, spans)
 
   H.state.anchors = Anchors.find(source_lines, text)
+  H.state.renderer = name
   H.sync_preview(true)
+  local data = { source = H.state.source, preview = buf, renderer = name }
+  api.nvim_exec_autocmds('User', { pattern = 'BesideRender', modeline = false, data = data })
 end
 
 H.set_highlights = function(buf, spans)

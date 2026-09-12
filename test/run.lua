@@ -199,6 +199,34 @@ Beside.setup({})
 renderers = Beside.config.renderers
 check('setup() resets to the defaults', renderers.mdcat == nil and renderers.glow.style == nil)
 
+local _, _, message = Beside.get_renderer('markdown', {
+  name = 'nope',
+})
+check('an unknown renderer name is reported', contains(message, 'no renderer named nope'), message)
+
+_, _, message = Beside.get_renderer('text')
+check(
+  'no renderer for a filetype nobody declares',
+  contains(message, 'no renderer for text files'),
+  message
+)
+
+_, _, message = Beside.get_renderer('rst', {
+  name = 'leaf',
+})
+check(
+  'a named renderer must declare the filetype',
+  contains(message, 'leaf does not render rst'),
+  message
+)
+
+local completion = vim.fn.getcompletion('Beside ', 'cmdline')
+check(
+  ':Beside completes renderer names',
+  vim.deep_equal(completion, { 'glow', 'leaf', 'pandoc' }),
+  show(completion)
+)
+
 print('-- results')
 print(failed == 0 and 'all checks passed\n' or failed .. ' checks FAILED\n')
 vim.cmd(failed == 0 and 'qall!' or 'cquit 1')
