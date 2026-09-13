@@ -227,6 +227,25 @@ check(
   show(completion)
 )
 
+-- Health ---------------------------------------------------------------------
+print('-- health')
+
+-- record what :checkhealth would print, as `<kind> <message>` lines
+local report = {}
+local health = vim.health
+vim.health = setmetatable({}, {
+  __index = function(_, kind)
+    return function(msg) report[#report + 1] = kind .. ' ' .. msg end
+  end,
+})
+require('beside.health').check()
+vim.health = health
+report = table.concat(report, '\n')
+local renderers_listed = contains(report, 'start Renderers') and contains(report, 'leaf')
+local filetypes_listed = contains(report, 'start Filetypes') and contains(report, 'rst')
+check('checkhealth lists the renderers', renderers_listed, report)
+check('checkhealth lists the filetypes', filetypes_listed, report)
+
 print('-- results')
 print(failed == 0 and 'all checks passed\n' or failed .. ' checks FAILED\n')
 vim.cmd(failed == 0 and 'qall!' or 'cquit 1')

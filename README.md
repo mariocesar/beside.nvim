@@ -14,7 +14,8 @@ entry away, see [Adding a renderer](#adding-a-renderer).
 
 - Neovim 0.10 or newer
 - At least one renderer on `$PATH`: `leaf`, `glow` or `pandoc` (3.1.10 or
-  newer, for its `ansi` output)
+  newer, for its `ansi` output). `:checkhealth beside` shows which are found
+  and what each filetype would be rendered with.
 
 ## Install
 
@@ -132,6 +133,7 @@ laid out as:
 - `lua/beside/renderers.lua`: the renderer contract and the builtins
 - `lua/beside/ansi.lua`: ANSI escapes to text and styles
 - `lua/beside/anchors.lua`: matching source lines to rendered lines
+- `lua/beside/health.lua`: `:checkhealth beside`
 
 ## License
 
