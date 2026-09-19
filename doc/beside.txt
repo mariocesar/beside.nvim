@@ -1,0 +1,183 @@
+*beside.txt*  Live rendering of the current document beside its buffer
+
+==============================================================================
+CONTENTS                                                *beside* *beside.nvim*
+
+  Setup ....................................... |beside-setup|
+  Commands .................................... |beside-commands|
+  Configuration ............................... |Beside.config|
+  Renderers ................................... |beside-renderers|
+  Per-buffer configuration .................... |beside-buffer-config|
+  How the sync works .......................... |beside-sync|
+  Events ...................................... |beside-events|
+  Functions ................................... |beside-functions|
+
+beside renders the document you are editing in a split beside it, with a
+terminal renderer you already have: leaf, glow or pandoc out of the box. The
+preview follows the cursor, scrolling the preview scrolls the source, and it
+re-renders as you type, without saving. It moves along to the next document
+opened beside it, and closes when its source is gone.
+
+==============================================================================
+SETUP                                                           *beside-setup*
+
+Neovim 0.10 or newer, and at least one renderer on $PATH: `leaf`, `glow` or
+`pandoc` (3.1.10 or newer, for its `ansi` writer). |:checkhealth| `beside`
+shows which are found.
+
+With lazy.nvim: >lua
+  { 'mariocesar/beside.nvim', cmd = 'Beside', opts = {} }
+<
+`require('beside').setup({})` is optional; the defaults apply without it.
+
+==============================================================================
+COMMANDS                                                     *beside-commands*
+
+:Beside [{renderer}]                                                 *:Beside*
+    Toggle the preview for the current buffer. With a renderer name, open the
+    preview with that renderer or switch to it; names complete. While the
+    preview is open:
+    - moving or scrolling in the source keeps the preview at the same place,
+      and scrolling the preview scrolls the source
+    - edits re-render after `delay` milliseconds, unsaved
+    - opening another document in the same tab moves the preview to it; when
+      no window shows the document any more, the preview closes
+    - `q` in the preview closes it
+
+:checkhealth beside                                       *beside-checkhealth*
+    List the renderers, whether each is installed, and what each filetype
+    would be rendered with.
+
+==============================================================================
+CONFIGURATION                                                  *Beside.config*
+
+The defaults: >lua
+  require('beside').setup({
+    -- Preview width: fraction of the screen, or a column count when 2 or more
+    width = 0.4,
+
+    -- Milliseconds after the last change before re-rendering
+    delay = 100,
+
+    -- Renderers to try first, per filetype
+    prefer = {
+      markdown = { 'leaf', 'glow', 'pandoc' },
+    },
+
+    -- Renderers by name; the builtins are leaf, glow and pandoc
+    renderers = require('beside.renderers'),
+  })
+<
+User settings deep-merge into the defaults, and lists replace. So an option
+is set with `renderers = { glow = { style = 'dracula' } }`, and a
+filetype's order is replaced with `prefer = { markdown = { 'glow' } }`.
+
+`prefer` lists renderer names to try first for a filetype, in order. Any
+other renderer whose `filetypes` include it follows, by name. The first one
+installed renders. A filetype no renderer declares cannot be previewed, and
+|:Beside| says so.
+
+==============================================================================
+RENDERERS                                                   *beside-renderers*
+
+A renderer is an entry in `config.renderers`, keyed by its name. It runs a
+command with the document on stdin and reads ANSI-colored text back. Fields:
+
+  filetypes    Table of the filetypes it renders, each mapped to the format
+               name its command needs, or to `true` when that is the
+               filetype itself. pandoc maps `markdown` to `gfm`.
+  command      Function called with a context, see below. Returns the argv
+               of a command that renders stdin to ANSI-colored text on
+               stdout, no wider than `context.width` columns.
+  env          Optional. Extra environment for the command.
+  executable   Optional. What must be on $PATH; the name by default.
+
+The context a command is called with:                         *beside.Context*
+
+  filetype     The document's filetype.
+  format       What the renderer's `filetypes` maps it to.
+  width        Columns available in the preview.
+  background   The editor's 'background', `light` or `dark`.
+  renderer     The renderer's entry itself, with any user options merged in.
+
+Adding a renderer is one entry: >lua
+  require('beside').setup({
+    renderers = {
+      mdcat = {
+        filetypes = { markdown = true },
+        command = function(context)
+          return { 'mdcat', '--columns', tostring(context.width), '-' }
+        end,
+      },
+    },
+  })
+<
+The builtins in lua/beside/renderers.lua have the same shape, so a renderer
+worth sharing is a pull request adding an entry there. glow takes one option,
+`style`, a glow style name; the editor's 'background' is the default.
+
+==============================================================================
+PER-BUFFER CONFIGURATION                                *beside-buffer-config*
+
+`vim.b.beside_config`, a table of the same shape as |Beside.config|,
+overrides it for that buffer. Set one in "after/ftplugin/<filetype>.lua" to
+configure a filetype: >lua
+  vim.b.beside_config = { prefer = { rst = { 'pandoc' } }, width = 0.5 }
+<
+Buffer variables cannot hold functions, so renderers themselves are added in
+|Beside.setup()|.
+
+==============================================================================
+HOW THE SYNC WORKS                                               *beside-sync*
+
+Renderers change the line count: a table becomes a box, a paragraph wraps,
+a code block grows a frame. There is no line-for-line map, so beside matches
+the text of each source line to the rendered output and interpolates between
+matches. Headings, list items, code lines and table cells anchor exactly;
+inside a wrapped paragraph the preview lands within a line or two.
+
+==============================================================================
+EVENTS                                                         *beside-events*
+
+User BesideRender                                               *BesideRender*
+    Fires after each render. `data` holds `source` (the previewed buffer),
+    `preview` (the preview buffer) and `renderer` (its name): >lua
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'BesideRender',
+        callback = function(event) print(event.data.renderer) end,
+      })
+<
+==============================================================================
+FUNCTIONS                                                   *beside-functions*
+
+setup({config})                                               *Beside.setup()*
+    Merge {config} over the defaults, checking types. See |Beside.config|.
+    Optional: the defaults apply without it.
+
+open({opts})                                                   *Beside.open()*
+    Open the preview for the current buffer, or move it here when it is open
+    for another one. {opts} may hold `renderer`, the name of the renderer to
+    use instead of the preferred one.
+
+close()                                                       *Beside.close()*
+    Close the preview.
+
+toggle({opts})                                               *Beside.toggle()*
+    Close the preview when the current buffer is the previewed one or the
+    preview itself, open it otherwise. With `opts.renderer`, the previewed
+    buffer is rendered again with that renderer instead of closing. This is
+    what |:Beside| calls.
+
+get_preview()                                           *Beside.get_preview()*
+    The preview as a table with `win`, `buf`, `source` (the previewed buffer)
+    and `renderer` (the name of the renderer used), or nil when it is closed.
+
+get_renderer({filetype}, {opts})                       *Beside.get_renderer()*
+    The renderer for {filetype}: the first installed one among the
+    candidates, those in `config.prefer` for it, in order, then any other
+    declaring it, by name. {opts} may hold `name`, a renderer to use if it
+    can, and `buf`, a buffer whose local config to honour.
+    Returns the name and its entry in `config.renderers`, or nil, nil and a
+    message saying what is missing.
+
+ vim:tw=78:ts=8:noet:ft=help:norl:

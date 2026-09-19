@@ -1,5 +1,5 @@
 --- beside.nvim: a live rendering of the current document beside its buffer,
---- by leaf, glow, pandoc or any renderer added as a table entry.
+--- by leaf, glow, pandoc or any renderer added as a table entry. See :h beside.
 
 -- Module definition ==========================================================
 local Ansi = require('beside.ansi')
@@ -18,7 +18,7 @@ Beside.setup = function(config)
 end
 
 --- Defaults. User settings deep-merge into them; lists replace. The README
---- repeats this table, keep it in step.
+--- and doc/beside.txt repeat this table, keep them in step.
 Beside.config = {
   -- Preview width: fraction of the screen, or a column count when 2 or more
   width = 0.4,

@@ -25,7 +25,8 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim):
 { 'mariocesar/beside.nvim', cmd = 'Beside', opts = {} }
 ```
 
-`setup()` is optional; the defaults below apply without it.
+`setup()` is optional; the defaults below apply without it. `:h beside` has
+the full documentation.
 
 ## Use
 
@@ -126,8 +127,8 @@ inside a wrapped paragraph the preview lands within a line or two.
 make test          # nvim --clean --headless -c 'luafile test/run.lua'
 ```
 
-Tests print one line per check and need no renderer installed. The code is
-laid out as:
+Tests print one line per check and need no renderer installed. `doc/beside.txt` is written by hand; update it with the code. The
+code is laid out as:
 
 - `lua/beside/init.lua`: setup, config, the preview window and the sync
 - `lua/beside/renderers.lua`: the renderer contract and the builtins
