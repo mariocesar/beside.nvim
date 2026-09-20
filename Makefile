@@ -1,4 +1,5 @@
 NVIM ?= nvim
+STYLUA ?= stylua
 
 test:
 	$(NVIM) --clean --headless -c 'luafile test/run.lua'
@@ -6,4 +7,10 @@ test:
 dev:
 	$(NVIM) --clean --cmd 'set rtp^=.'
 
-.PHONY: test dev
+format:
+	$(STYLUA) lua plugin test
+
+format-check:
+	$(STYLUA) --check lua plugin test
+
+.PHONY: test dev format format-check

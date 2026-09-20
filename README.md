@@ -125,6 +125,7 @@ inside a wrapped paragraph the preview lands within a line or two.
 
 ```sh
 make test          # nvim --clean --headless -c 'luafile test/run.lua'
+make format        # stylua, see stylua.toml
 ```
 
 Tests print one line per check and need no renderer installed. `doc/beside.txt` is written by hand; update it with the code. The
