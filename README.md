@@ -6,9 +6,13 @@ re-renders as you type. Rendering is done by a terminal renderer you already
 have: [leaf](https://github.com/RivoLink/leaf), [glow](https://github.com/charmbracelet/glow)
 or [pandoc](https://pandoc.org).
 
+![Editing a markdown document with its leaf rendering beside it; scrolling either side scrolls the other](demo/markdown.gif)
+
 Markdown renders with leaf or glow; markdown, reStructuredText, AsciiDoc, Org,
 Textile, Typst and Djot render with pandoc. Any other renderer is one table
 entry away, see [Adding a renderer](#adding-a-renderer).
+
+![A reStructuredText document rendered by pandoc](demo/rst.gif)
 
 ## Requirements
 
@@ -40,6 +44,8 @@ preview is open:
 - opening another document in the same tab moves the preview to it; when no
   window shows the document any more, the preview closes
 - `q` in the preview closes it
+
+![Switching the preview from leaf to glow with :Beside glow](demo/renderers.gif)
 
 ## Configuration
 
@@ -126,6 +132,7 @@ inside a wrapped paragraph the preview lands within a line or two.
 ```sh
 make test          # nvim --clean --headless -c 'luafile test/run.lua'
 make format        # stylua, see stylua.toml
+make demo          # record demo/*.gif from demo/*.tape, needs vhs
 ```
 
 Tests print one line per check and need no renderer installed. `doc/beside.txt` is written by hand; update it with the code. The
