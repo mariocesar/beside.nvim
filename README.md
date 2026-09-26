@@ -8,9 +8,18 @@ or [pandoc](https://pandoc.org).
 
 ![Editing a markdown document with its leaf rendering beside it; scrolling either side scrolls the other](demo/markdown.gif)
 
+## Why another preview
+
+The existing previews are each tied to one renderer, and some need node or a
+browser. I like glow's output for some documents and leaf's for others, so
+beside runs whichever renderer is installed and lets you switch with
+`:Beside glow`. In-buffer renderers like render-markdown.nvim are a
+different thing and work fine alongside it.
+
 Markdown renders with leaf or glow; markdown, reStructuredText, AsciiDoc, Org,
 Textile, Typst and Djot render with pandoc. Any other renderer is one table
-entry away, see [Adding a renderer](#adding-a-renderer).
+entry away, see [Adding a renderer](#adding-a-renderer). When someone creates
+the next great markup language, beside will be ready for it!.
 
 ![A reStructuredText document rendered by pandoc](demo/rst.gif)
 
