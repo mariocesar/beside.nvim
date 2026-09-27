@@ -13,7 +13,7 @@ pandoc or any renderer added to `config.renderers`. Neovim 0.10+, no dependencie
 
 ## Verify
 
-`make test` and `make format-check` (stylua 2.3.1). Editor behaviour is tested by hand with `test/sample.*`.
+`make test` and `make format-check` (stylua 2.3.1). Editor behaviour is tested by hand with `demo/sample.*`.
 
 ## Conventions
 
