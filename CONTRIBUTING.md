@@ -117,9 +117,11 @@ These are the things that tend to bite, roughly in the order I run into them.
   environment variable that forces them; glow's entry sets `CLICOLOR_FORCE=1`
   in `env` for this. To check, run
   `tool < demo/sample.md | cat -v`; you should see `^[[` sequences.
-- **Only color escapes survive.** The preview understands SGR (`ESC[...m`) and
-  strips OSC hyperlinks. Cursor movement, screen clears or a pager show up as
-  garbage, or the render hangs. Turn off paging and anything interactive.
+- **Only color escapes survive.** The preview understands SGR (`ESC[...m`):
+  colors, bold, dim, italic, underline, reverse and strikethrough. Other SGR
+  attributes are dropped, and OSC hyperlinks are stripped. Cursor movement,
+  screen clears or a pager show up as garbage, or the render hangs. Turn off
+  paging and anything interactive.
 - **Colors against the theme.** The 16 base colors come from the colorscheme's
   terminal colors, so they follow the user's theme. 256-color and truecolor
   output is shown exactly as the renderer picks it, and a style made for a dark
