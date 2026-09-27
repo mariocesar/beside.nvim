@@ -11,3 +11,6 @@ vim.api.nvim_create_user_command(
     desc = 'Toggle a live rendering of the current document beside it; a name picks the renderer',
   }
 )
+
+-- Neovim has no filetype for Carve yet
+vim.filetype.add({ extension = { crv = 'carve' } })
