@@ -3,8 +3,8 @@
 A live rendering of the document you are editing, in a split beside it. The
 preview follows your cursor, scrolling the preview scrolls the source, and it
 re-renders as you type. Rendering is done by a terminal renderer you already
-have: [leaf](https://github.com/RivoLink/leaf), [glow](https://github.com/charmbracelet/glow)
-or [pandoc](https://pandoc.org).
+have: [leaf](https://github.com/RivoLink/leaf), [glow](https://github.com/charmbracelet/glow),
+[pandoc](https://pandoc.org) or [carve](https://markup-carve.github.io/carve).
 
 ![Editing a markdown document with its leaf rendering beside it; scrolling either side scrolls the other](demo/markdown.gif)
 
@@ -17,18 +17,21 @@ beside runs whichever renderer is installed and lets you switch with
 different thing and work fine alongside it.
 
 Markdown renders with leaf or glow; markdown, reStructuredText, AsciiDoc, Org,
-Textile, Typst and Djot render with pandoc. Any other renderer is one table
-entry away, see [Adding a renderer](#adding-a-renderer). When someone creates
-the next great markup language, beside will be ready for it!.
+Textile, Typst and Djot render with pandoc; Carve renders with carve. Any
+other renderer is one table entry away, see [Adding a renderer](#adding-a-renderer).
+When someone creates the next great markup language, beside will be ready for
+it!.
 
 ![A reStructuredText document rendered by pandoc](demo/rst.gif)
+
+![A Carve document rendered by carve](demo/carve.gif)
 
 ## Requirements
 
 - Neovim 0.10 or newer
-- At least one renderer on `$PATH`: `leaf`, `glow` or `pandoc` (3.1.10 or
-  newer, for its `ansi` output). `:checkhealth beside` shows which are found
-  and what each filetype would be rendered with.
+- At least one renderer on `$PATH`: `leaf`, `glow`, `carve` or `pandoc`
+  (3.1.10 or newer, for its `ansi` output). `:checkhealth beside` shows which
+  are found and what each filetype would be rendered with.
 
 ## Install
 
@@ -74,7 +77,7 @@ require('beside').setup({
     markdown = { 'leaf', 'glow', 'pandoc' },
   },
 
-  -- Renderers by name; the builtins are leaf, glow and pandoc
+  -- Renderers by name; the builtins are leaf, glow, pandoc and carve
   renderers = require('beside.renderers'),
 })
 ```

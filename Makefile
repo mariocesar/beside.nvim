@@ -18,6 +18,7 @@ format-check:
 demo:
 	$(VHS) demo/markdown.tape
 	$(VHS) demo/rst.tape
+	$(VHS) demo/carve.tape
 	$(VHS) demo/renderers.tape
 
 .PHONY: test dev format format-check demo
