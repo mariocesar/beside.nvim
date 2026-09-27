@@ -127,7 +127,8 @@ require('beside').setup({
   default.
 
 The same shape is what `lua/beside/renderers.lua` uses for the builtins, so a
-renderer worth sharing is a pull request adding an entry there.
+renderer worth sharing is a pull request adding an entry there; see
+[CONTRIBUTING.md](CONTRIBUTING.md#adding-a-renderer).
 
 ### Per filetype
 
@@ -150,23 +151,11 @@ text of each source line to the rendered output and interpolates between
 matches. Headings, list items, code lines and table cells anchor exactly;
 inside a wrapped paragraph the preview lands within a line or two.
 
-## Development
+## Contributing
 
-```sh
-make test          # nvim --clean --headless -c 'luafile test/run.lua'
-make format        # stylua, see stylua.toml
-make demo          # record demo/*.gif from demo/*.tape, needs vhs
-```
-
-Tests print one line per check and need no renderer installed.
-`doc/beside.txt` is written by hand; update it with the code. The code is laid
-out as:
-
-- `lua/beside/init.lua`: setup, config, the preview window and the sync
-- `lua/beside/renderers.lua`: the renderer contract and the builtins
-- `lua/beside/ansi.lua`: ANSI escapes to text and styles
-- `lua/beside/anchors.lua`: matching source lines to rendered lines
-- `lua/beside/health.lua`: `:checkhealth beside`
+Bug reports, fixes and new renderers are welcome. [CONTRIBUTING.md](CONTRIBUTING.md)
+covers the dev setup, adding a renderer with its demo tape, and the renderer
+quirks worth knowing about.
 
 ## License
 
