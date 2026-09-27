@@ -3,10 +3,10 @@
 A live rendering of the document you are editing, in a split beside it. The
 preview follows your cursor, scrolling the preview scrolls the source, and it
 re-renders as you type. Rendering is done by a terminal renderer you already
-have: [leaf](https://github.com/RivoLink/leaf), [glow](https://github.com/charmbracelet/glow),
-[pandoc](https://pandoc.org) or [carve](https://markup-carve.github.io/carve).
+have: leaf, glow, pandoc or carve, see [Supported renderers](#supported-renderers).
 
 ![Editing a markdown document with its leaf rendering beside it; scrolling either side scrolls the other](demo/markdown.gif)
+*Markdown rendered by leaf. Moving in either side scrolls the other.*
 
 ## Why another preview
 
@@ -16,22 +16,32 @@ beside runs whichever renderer is installed and lets you switch with
 `:Beside glow`. In-buffer renderers like render-markdown.nvim are a
 different thing and work fine alongside it.
 
-Markdown renders with leaf or glow; markdown, reStructuredText, AsciiDoc, Org,
-Textile, Typst and Djot render with pandoc; Carve renders with carve. Any
-other renderer is one table entry away, see [Adding a renderer](#adding-a-renderer).
-When someone creates the next great markup language, beside will be ready for
-it!.
+## Supported renderers
+
+| Renderer | Renders | Install |
+| --- | --- | --- |
+| [leaf](https://github.com/RivoLink/leaf) | Markdown | [github.com/RivoLink/leaf](https://github.com/RivoLink/leaf#install) |
+| [glow](https://github.com/charmbracelet/glow) | Markdown | [github.com/charmbracelet/glow](https://github.com/charmbracelet/glow#installation) |
+| [pandoc](https://pandoc.org) 3.1.10+ | Markdown, reStructuredText, AsciiDoc, Org, Textile, Typst, Djot | [pandoc.org/installing](https://pandoc.org/installing.html) |
+| [carve](https://markup-carve.github.io/carve) | Carve | [markup-carve.github.io/carve/get-started](https://markup-carve.github.io/carve/get-started) |
+
+Markdown tries leaf, then glow, then pandoc; the first one installed renders.
+Any other renderer is one table entry away, see
+[Adding a renderer](#adding-a-renderer). When someone creates the next great
+markup language, beside will be ready for it!
 
 ![A reStructuredText document rendered by pandoc](demo/rst.gif)
+*reStructuredText rendered by pandoc.*
 
 ![A Carve document rendered by carve](demo/carve.gif)
+*Carve rendered by carve.*
 
 ## Requirements
 
 - Neovim 0.10 or newer
-- At least one renderer on `$PATH`: `leaf`, `glow`, `carve` or `pandoc`
-  (3.1.10 or newer, for its `ansi` output). `:checkhealth beside` shows which
-  are found and what each filetype would be rendered with.
+- At least one of the [supported renderers](#supported-renderers) on `$PATH`.
+  `:checkhealth beside` shows which are found and what each filetype would be
+  rendered with.
 
 ## Install
 
@@ -58,6 +68,7 @@ preview is open:
 - `q` in the preview closes it
 
 ![Switching the preview from leaf to glow with :Beside glow](demo/renderers.gif)
+*`:Beside glow` switches the preview from leaf to glow.*
 
 ## Configuration
 
@@ -147,8 +158,9 @@ make format        # stylua, see stylua.toml
 make demo          # record demo/*.gif from demo/*.tape, needs vhs
 ```
 
-Tests print one line per check and need no renderer installed. `doc/beside.txt` is written by hand; update it with the code. The
-code is laid out as:
+Tests print one line per check and need no renderer installed.
+`doc/beside.txt` is written by hand; update it with the code. The code is laid
+out as:
 
 - `lua/beside/init.lua`: setup, config, the preview window and the sync
 - `lua/beside/renderers.lua`: the renderer contract and the builtins
