@@ -13,17 +13,17 @@ CONTENTS                                                *beside* *beside.nvim*
   Functions ................................... |beside-functions|
 
 beside renders the document you are editing in a split beside it, with a
-terminal renderer you already have: leaf, glow or pandoc out of the box. The
-preview follows the cursor, scrolling the preview scrolls the source, and it
-re-renders as you type, without saving. It moves along to the next document
-opened beside it, and closes when its source is gone.
+terminal renderer you already have: leaf, glow, pandoc or carve out of the
+box. The preview follows the cursor, scrolling the preview scrolls the source,
+and it re-renders as you type, without saving. It moves along to the next
+document opened beside it, and closes when its source is gone.
 
 ==============================================================================
 SETUP                                                           *beside-setup*
 
-Neovim 0.10 or newer, and at least one renderer on $PATH: `leaf`, `glow` or
-`pandoc` (3.1.10 or newer, for its `ansi` writer). |:checkhealth| `beside`
-shows which are found.
+Neovim 0.10 or newer, and at least one renderer on $PATH: `leaf`, `glow`,
+`carve` or `pandoc` (3.1.10 or newer, for its `ansi` writer).
+|:checkhealth| `beside` shows which are found.
 
 With lazy.nvim: >lua
   { 'mariocesar/beside.nvim', cmd = 'Beside', opts = {} }
@@ -64,7 +64,7 @@ The defaults: >lua
       markdown = { 'leaf', 'glow', 'pandoc' },
     },
 
-    -- Renderers by name; the builtins are leaf, glow and pandoc
+    -- Renderers by name; the builtins are leaf, glow, pandoc and carve
     renderers = require('beside.renderers'),
   })
 <
