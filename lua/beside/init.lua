@@ -402,11 +402,31 @@ H.highlight_group = function(style)
   local fg = (style.fg or ''):gsub('#', '')
   local bg = (style.bg or ''):gsub('#', '')
   local name = 'Beside_' .. fg .. '_' .. bg
-  for _, attribute in ipairs({ 'bold', 'italic', 'underline', 'strikethrough' }) do
+  for _, attribute in ipairs({ 'bold', 'dim', 'italic', 'underline', 'reverse', 'strikethrough' }) do
     if style[attribute] then name = name .. '_' .. attribute:sub(1, 1) end
   end
-  if vim.tbl_isempty(api.nvim_get_hl(0, { name = name })) then api.nvim_set_hl(0, name, style) end
+  if vim.tbl_isempty(api.nvim_get_hl(0, { name = name })) then
+    local highlight = vim.deepcopy(style)
+    highlight.dim = nil
+    if style.dim then highlight.fg = H.dim_color(style.fg, style.bg) end
+    api.nvim_set_hl(0, name, highlight)
+  end
   return name
+end
+
+-- Neovim has no dim attribute: blend the foreground halfway into the background
+H.dim_color = function(fg, bg)
+  local normal = api.nvim_get_hl(0, { name = 'Normal', link = false })
+  local dark = vim.o.background == 'dark'
+  fg = fg and tonumber(fg:sub(2), 16) or normal.fg or (dark and 0xffffff or 0x000000)
+  bg = bg and tonumber(bg:sub(2), 16) or normal.bg or (dark and 0x000000 or 0xffffff)
+  local channels = {}
+  for _, shift in ipairs({ 16, 8, 0 }) do
+    local from = math.floor(fg / 2 ^ shift) % 256
+    local to = math.floor(bg / 2 ^ shift) % 256
+    channels[#channels + 1] = math.floor((from + to) / 2)
+  end
+  return ('#%02x%02x%02x'):format(channels[1], channels[2], channels[3])
 end
 
 -- Columns for the render; renderers refuse very narrow ones

@@ -23,14 +23,22 @@ local xterm = {
 }
 
 -- Attributes a single SGR code turns on, and the codes turning them off
-local attributes = { [1] = 'bold', [3] = 'italic', [4] = 'underline', [9] = 'strikethrough' }
+local attributes = {
+  [1] = 'bold',
+  [2] = 'dim',
+  [3] = 'italic',
+  [4] = 'underline',
+  [7] = 'reverse',
+  [9] = 'strikethrough',
+}
 local resets = {
-  [22] = 'bold',
-  [23] = 'italic',
-  [24] = 'underline',
-  [29] = 'strikethrough',
-  [39] = 'fg',
-  [49] = 'bg',
+  [22] = { 'bold', 'dim' },
+  [23] = { 'italic' },
+  [24] = { 'underline' },
+  [27] = { 'reverse' },
+  [29] = { 'strikethrough' },
+  [39] = { 'fg' },
+  [49] = { 'bg' },
 }
 
 --- '#rrggbb' for a 256-color index: the colorscheme's terminal colors for the
@@ -73,7 +81,9 @@ Ansi.apply = function(style, codes)
     elseif attributes[code] then
       style[attributes[code]] = true
     elseif resets[code] then
-      style[resets[code]] = nil
+      for _, attribute in ipairs(resets[code]) do
+        style[attribute] = nil
+      end
     elseif code >= 30 and code <= 37 then
       style.fg = Ansi.palette(code - 30)
     elseif code >= 90 and code <= 97 then
@@ -94,7 +104,7 @@ end
 ---@return string text The line without escapes.
 ---@return table spans Array of `{ from = byte, to = byte, style = table }`, `from`
 ---   0-based and `to` exclusive. A style has any of `fg`, `bg` ('#rrggbb') and
----   `bold`, `italic`, `underline`, `strikethrough` (true).
+---   `bold`, `dim`, `italic`, `underline`, `reverse`, `strikethrough` (true).
 Ansi.parse = function(line)
   -- OSC sequences carry hyperlinks and show nothing
   line = line:gsub('\27%][^\7\27]*\7', ''):gsub('\27%][^\7\27]*\27\\', '')
