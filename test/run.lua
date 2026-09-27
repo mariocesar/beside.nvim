@@ -223,7 +223,7 @@ check(
 local completion = vim.fn.getcompletion('Beside ', 'cmdline')
 check(
   ':Beside completes renderer names',
-  vim.deep_equal(completion, { 'glow', 'leaf', 'pandoc' }),
+  vim.deep_equal(completion, { 'carve', 'glow', 'leaf', 'pandoc' }),
   show(completion)
 )
 
