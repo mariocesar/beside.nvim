@@ -14,11 +14,9 @@ format:
 format-check:
 	$(STYLUA) --check lua plugin test
 
-# Record the README demos into demo/*.gif
-demo:
-	$(VHS) demo/markdown.tape
-	$(VHS) demo/rst.tape
-	$(VHS) demo/carve.tape
-	$(VHS) demo/renderers.tape
+demo: demo/markdown.gif demo/rst.gif demo/carve.gif demo/renderers.gif
+
+demo/%.gif: | demo/%.tape
+	$(VHS) $|
 
 .PHONY: test dev format format-check demo
