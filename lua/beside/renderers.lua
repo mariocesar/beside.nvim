@@ -56,4 +56,11 @@ renderers.pandoc = {
   end,
 }
 
+-- carve renders Carve, https://markup-carve.github.io/carve. It takes no width,
+-- the preview wraps its long lines.
+renderers.carve = {
+  filetypes = { carve = true },
+  command = function() return { 'carve', '--ansi', '-' } end,
+}
+
 return renderers
