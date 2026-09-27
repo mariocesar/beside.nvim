@@ -1,0 +1,95 @@
+# H1 Title
+
+## H2 Section
+
+### H3 Sub
+
+#### H4 Sub
+
+##### H5 Sub
+
+###### H6 Sub
+
+Paragraph with *bold*, /italic/, ~strike~, _underline_, =highlight=, `code`, a [link text](https://example.com/page) and an image ![alt text](https://example.com/img.png).
+
+This has /italic/, *bold*, _underline_, ~strikethrough~, and =highlight=.
+
+Also /*bold italic*/, *bold with /italic/ inside*, {+inserted+}, {-deleted-}, {~old~>new~}, H{,2,}O and E=mc{^2^}, a footnote[^fn] and an abbreviation like HTML.
+
+- bullet one
+- bullet two
+  - nested bullet
+    - deeper bullet
+- bullet three
+
+1. numbered one
+2. numbered two
+   1. nested numbered
+
+> blockquote line one
+> blockquote line two
+^ Someone
+
+- [ ] task open
+- [x] task done
+- [-] task dropped
+- [_] task paused
+- [>] task deferred
+- [?] task maybe
+- [ ] task with subtasks
+  - [x] subtask done
+  - [ ] subtask open
+
+|= Col A |= Col B with a much longer header text that is very wide |=> Col C |
+| a | b | c |
+| a very long cell content that should exceed the width limit set by the user for testing | b | c |
+^ A table caption
+
+| Name | Age |
+|:-----|----:|
+| Alice | 28 |
+| Bob | 34 |
+
+|=         |= Diameter (km) |= Size vs Earth |
+|= Mercury | 4,879.4        | 38%            |
+|= Venus   | 12,104         | 95%            |
+
+|= Style    |= Sample      |
+| italic    | /soft/       |
+| strong    | *firm*       |
+| code      | `literal`    |
+
+|= Category |= Item    |=> Price |
+| Fruit     | Apple    | $1      |
+| ^         | Banana   | $0.50   |
+| Total     | <        | $1.50   |
+
+|= Feature |= Description        |
+| Complex  | A long description |
++          | that continues     |
++          | across lines.      |
+| Simple   | Single line.       |
+
+```python
+def hello():
+    print("this is a very long line of code that should exceed the width limit set by the user for testing purposes ok")
+```
+
+::: note
+An admonition with a /short/ body.
+:::
+
+:: term
+: A definition for the term.
+
+---
+
+Final paragraph that is long enough to wrap when the width is set to a small number like forty columns for testing.
+
+## Instalación rápida
+
+Más información aquí, con ñ y acentos.
+
+[^fn]: The footnote body.
+
+*[HTML]: HyperText Markup Language
