@@ -78,6 +78,27 @@ expected = {
 }
 check('an off-code drops one attribute', vim.deep_equal(spans, expected), show(spans))
 
+text, spans = Ansi.parse('\27[1;2;7mall\27[22m reverse\27[27m plain')
+expected = {
+  {
+    from = 0,
+    to = 3,
+    style = {
+      bold = true,
+      dim = true,
+      reverse = true,
+    },
+  },
+  {
+    from = 3,
+    to = 11,
+    style = {
+      reverse = true,
+    },
+  },
+}
+check('dim and reverse, 22 drops bold and dim', vim.deep_equal(spans, expected), show(spans))
+
 text, spans = Ansi.parse('\27]8;;https://x.y\7link\27]8;;\7 \27[4mu\27[24m')
 expected = { {
   from = 5,
