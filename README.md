@@ -20,12 +20,13 @@ different thing and work fine alongside it.
 
 | Renderer | Renders | Install |
 | --- | --- | --- |
-| [leaf](https://github.com/RivoLink/leaf) | Markdown | [github.com/RivoLink/leaf](https://github.com/RivoLink/leaf#install) |
-| [glow](https://github.com/charmbracelet/glow) | Markdown | [github.com/charmbracelet/glow](https://github.com/charmbracelet/glow#installation) |
-| [pandoc](https://pandoc.org) 3.1.10+ | Markdown, reStructuredText, AsciiDoc, Org, Textile, Typst, Djot | [pandoc.org/installing](https://pandoc.org/installing.html) |
+| [leaf](https://github.com/RivoLink/leaf) | Markdown, R Markdown, Quarto | [github.com/RivoLink/leaf](https://github.com/RivoLink/leaf#install) |
+| [glow](https://github.com/charmbracelet/glow) | Markdown, R Markdown, Quarto | [github.com/charmbracelet/glow](https://github.com/charmbracelet/glow#installation) |
+| [pandoc](https://pandoc.org) 3.1.10+ | Markdown, R Markdown, Quarto, reStructuredText, AsciiDoc, Org, Textile, Typst, Djot | [pandoc.org/installing](https://pandoc.org/installing.html) |
 | [carve](https://markup-carve.github.io/carve) | Carve | [markup-carve.github.io/carve/get-started](https://markup-carve.github.io/carve/get-started) |
 
-Markdown tries leaf, then glow, then pandoc; the first one installed renders.
+Markdown, R Markdown and Quarto try leaf, then glow, then pandoc; the first
+one installed renders. Code chunks show as code, nothing is executed.
 Any other renderer is one table entry away, see
 [Adding a renderer](#adding-a-renderer). When someone creates the next great
 markup language, beside will be ready for it!
