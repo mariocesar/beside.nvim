@@ -1,10 +1,11 @@
 # Changes
 
-## Unreleased
+## v0.3.0 (2026-10-17)
 
-Some renderers pick colors that are hard to read on my theme. pandoc's inline
-code was the worst, red on light gray on a dark background. beside now fixes
-those itself.
+Four things that make the preview more trustworthy. Colours that did not read
+on my theme now do, the preview no longer wanders off to an LSP hover, 
+:checkhealth tells you a renderer is broken before the first :Beside does, and
+R Markdown and Quarto documents preview like the markdown they are.
 
 - Text under 3:1 against its background gets lightened or darkened until it
   reads. It keeps its hue, just a bit stronger.
