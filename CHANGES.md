@@ -14,6 +14,10 @@ those itself.
 - Focusing a floating window no longer moves the preview to it. An LSP hover
   is a markdown buffer, so pressing `K` twice used to show the hover text in
   the preview and closing the hover closed the preview.
+- `:checkhealth beside` tries each installed renderer on a one-line document.
+  A pandoc too old for its `ansi` writer, like the one some distros still
+  package, used to pass as fine until the first preview failed; now health
+  shows pandoc's own error and marks the filetypes left to it.
 
 ## v0.2.1 (2026-09-27)
 
