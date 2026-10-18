@@ -81,7 +81,10 @@ installed renders. A filetype no renderer declares cannot be previewed, and
 RENDERERS                                                   *beside-renderers*
 
 A renderer is an entry in `config.renderers`, keyed by its name. It runs a
-command with the document on stdin and reads ANSI-colored text back. Fields:
+command with the document on stdin and reads ANSI-colored text back. Text that
+reads under 3:1 on its background is lightened or darkened until it does,
+so a renderer's colors stay legible on any colorscheme.
+Fields:
 
   filetypes    Table of the filetypes it renders, each mapped to the format
                name its command needs, or to `true` when that is the

@@ -126,6 +126,9 @@ require('beside').setup({
 - `executable`, optional, is what must be on `$PATH`; the renderer's name by
   default.
 
+Text that reads under 3:1 on its background is lightened or darkened until it
+does, so a renderer's colors stay legible on any colorscheme.
+
 The same shape is what `lua/beside/renderers.lua` uses for the builtins, so a
 renderer worth sharing is a pull request adding an entry there; see
 [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-renderer).

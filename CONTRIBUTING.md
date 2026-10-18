@@ -124,9 +124,11 @@ These are the things that tend to bite, roughly in the order I run into them.
   paging and anything interactive.
 - **Colors against the theme.** The 16 base colors come from the colorscheme's
   terminal colors, so they follow the user's theme. 256-color and truecolor
-  output is shown exactly as the renderer picks it, and a style made for a dark
-  terminal can be unreadable on a light background. `context.background` is
-  `light` or `dark`; glow uses it to pick its style.
+  output is shown as the renderer picks it, except text under 3:1 on its
+  background, which beside lightens or darkens. Dim text and spans with no
+  letters, like borders and rules, are left alone. Still, prefer a style made
+  for the editor's background: `context.background` is `light` or `dark`; glow
+  uses it to pick its style.
 - **Width.** Pass `context.width` to whatever width flag the tool has. It's
   the preview window's width minus one column, never less than 20, and beside
   re-renders when the window is resized. Tables and code block frames are

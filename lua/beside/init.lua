@@ -371,7 +371,7 @@ H.show = function(source_lines, result, name)
   vim.bo[buf].modifiable = true
   api.nvim_buf_set_lines(buf, 0, -1, false, text)
   vim.bo[buf].modifiable = false
-  H.set_highlights(buf, spans)
+  H.set_highlights(buf, text, spans)
 
   H.state.anchors = Anchors.find(source_lines, text)
   H.state.renderer = name
@@ -380,11 +380,13 @@ H.show = function(source_lines, result, name)
   api.nvim_exec_autocmds('User', { pattern = 'BesideRender', modeline = false, data = data })
 end
 
-H.set_highlights = function(buf, spans)
+H.set_highlights = function(buf, text, spans)
   api.nvim_buf_clear_namespace(buf, H.ns, 0, -1)
   for row, line_spans in ipairs(spans) do
     for _, span in ipairs(line_spans) do
-      local group = H.highlight_group(span.style)
+      -- Borders and rules have no letters, they keep their faint colors
+      local has_words = text[row]:sub(span.from + 1, span.to):find('%w') ~= nil
+      local group = H.highlight_group(span.style, has_words)
       api.nvim_buf_set_extmark(
         buf,
         H.ns,
@@ -398,35 +400,36 @@ end
 
 -- A highlight group for an ANSI style, named after its contents so equal
 -- styles share one. Defined again whenever a colorscheme change has cleared it.
-H.highlight_group = function(style)
+H.highlight_group = function(style, has_words)
+  -- Dim text is meant to be faint, it is never made more readable
+  local readable = has_words and not style.dim
   local fg = (style.fg or ''):gsub('#', '')
   local bg = (style.bg or ''):gsub('#', '')
   local name = 'Beside_' .. fg .. '_' .. bg
   for _, attribute in ipairs({ 'bold', 'dim', 'italic', 'underline', 'reverse', 'strikethrough' }) do
     if style[attribute] then name = name .. '_' .. attribute:sub(1, 1) end
   end
+  if readable then name = name .. '_readable' end
   if vim.tbl_isempty(api.nvim_get_hl(0, { name = name })) then
     local highlight = vim.deepcopy(style)
     highlight.dim = nil
-    if style.dim then highlight.fg = H.dim_color(style.fg, style.bg) end
+    local normal = api.nvim_get_hl(0, { name = 'Normal', link = false })
+    local dark = vim.o.background == 'dark'
+    local text_color = style.fg or H.hex(normal.fg) or (dark and '#ffffff' or '#000000')
+    local background = style.bg or H.hex(normal.bg) or (dark and '#000000' or '#ffffff')
+    -- Neovim has no dim attribute: blend the text halfway into the background
+    if style.dim then highlight.fg = Ansi.blend(text_color, background, 0.5) end
+    -- Reverse draws the background color as the text
+    if readable and style.reverse then highlight.bg = Ansi.readable(background, text_color) end
+    if readable and not style.reverse then highlight.fg = Ansi.readable(text_color, background) end
     api.nvim_set_hl(0, name, highlight)
   end
   return name
 end
 
--- Neovim has no dim attribute: blend the foreground halfway into the background
-H.dim_color = function(fg, bg)
-  local normal = api.nvim_get_hl(0, { name = 'Normal', link = false })
-  local dark = vim.o.background == 'dark'
-  fg = fg and tonumber(fg:sub(2), 16) or normal.fg or (dark and 0xffffff or 0x000000)
-  bg = bg and tonumber(bg:sub(2), 16) or normal.bg or (dark and 0x000000 or 0xffffff)
-  local channels = {}
-  for _, shift in ipairs({ 16, 8, 0 }) do
-    local from = math.floor(fg / 2 ^ shift) % 256
-    local to = math.floor(bg / 2 ^ shift) % 256
-    channels[#channels + 1] = math.floor((from + to) / 2)
-  end
-  return ('#%02x%02x%02x'):format(channels[1], channels[2], channels[3])
+H.hex = function(color)
+  if color == nil then return nil end
+  return ('#%06x'):format(color)
 end
 
 -- Columns for the render; renderers refuse very narrow ones
