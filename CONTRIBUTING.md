@@ -154,6 +154,8 @@ not the AI's. Read it, run it, and be ready to talk about it.
 
 - `make test` and `make format-check` pass. CI runs both.
 - One renderer or one fix per pull request.
+- Add a line under `## Unreleased` in `CHANGES.md` if users will notice the
+  change. Say what they'll see, not how it works.
 - Commit subjects are plain sentences saying what changed, like
   "Add the mdcat renderer".
 - Follow the style of the file you're in. The Lua follows the mini.nvim shape:
