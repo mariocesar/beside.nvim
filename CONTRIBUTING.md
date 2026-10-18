@@ -16,11 +16,12 @@ You need Neovim 0.10+. The tests need nothing else. For the rest:
 renderers you want to try.
 
 ```sh
-make dev           # Neovim with this checkout on the runtimepath, no user config
-make test          # headless checks, no renderer needed
-make format        # stylua, see stylua.toml
-make format-check  # what CI runs
-make demo          # record the missing demo/*.gif, needs vhs
+make dev             # Neovim with this checkout on the runtimepath, no user config
+make test            # headless checks, no renderer needed
+make format          # stylua, see stylua.toml
+make format-check    # what CI runs
+make demo            # record the missing demo/*.gif, needs vhs
+make notes V=v0.2.1  # a version's CHANGES.md section, as the release shows it
 ```
 
 Tests print one line per check. `doc/beside.txt` is written by hand, and the
