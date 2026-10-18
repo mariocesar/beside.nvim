@@ -38,7 +38,7 @@ own config. From there:
 :e demo/sample.md
 :Beside
 :Beside glow          " force a renderer
-:checkhealth beside   " what's installed and what each filetype resolves to
+:checkhealth beside   " which renderers work and what each filetype resolves to
 ```
 
 Lua caches modules once they're loaded, so after editing the code I quit and

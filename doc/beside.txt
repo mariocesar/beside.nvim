@@ -23,7 +23,7 @@ SETUP                                                           *beside-setup*
 
 Neovim 0.10 or newer, and at least one renderer on $PATH: `leaf`, `glow`,
 `carve` or `pandoc` (3.1.10 or newer, for its `ansi` writer).
-|:checkhealth| `beside` shows which are found.
+|:checkhealth| `beside` shows which are found and work.
 
 With lazy.nvim: >lua
   { 'mariocesar/beside.nvim', cmd = 'Beside', opts = {} }
@@ -45,8 +45,10 @@ COMMANDS                                                     *beside-commands*
     - `q` in the preview closes it
 
 :checkhealth beside                                       *beside-checkhealth*
-    List the renderers, whether each is installed, and what each filetype
-    would be rendered with.
+    List the renderers and what each filetype would be rendered with. Each
+    installed renderer is tried on a one-line document, so a pandoc too old
+    for its `ansi` writer is reported with pandoc's own error here instead of
+    failing on the first :Beside.
 
 ==============================================================================
 CONFIGURATION                                                  *Beside.config*

@@ -40,8 +40,8 @@ markup language, beside will be ready for it!
 
 - Neovim 0.10 or newer
 - At least one of the [supported renderers](#supported-renderers) on `$PATH`.
-  `:checkhealth beside` shows which are found and what each filetype would be
-  rendered with.
+  `:checkhealth beside` tries each one found on a short document, reporting
+  its error when it fails, and shows what each filetype would be rendered with.
 
 ## Install
 
