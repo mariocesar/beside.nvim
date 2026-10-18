@@ -14,6 +14,9 @@ those itself.
 - Focusing a floating window no longer moves the preview to it. An LSP hover
   is a markdown buffer, so pressing `K` twice used to show the hover text in
   the preview and closing the hover closed the preview.
+- R Markdown and Quarto documents preview with the markdown renderers. They
+  are markdown with code chunks; the chunks show as code, nothing runs. A
+  demo gif shows both.
 - `:checkhealth beside` tries each installed renderer on a one-line document.
   A pandoc too old for its `ansi` writer, like the one some distros still
   package, used to pass as fine until the first preview failed; now health
