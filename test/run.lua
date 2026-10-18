@@ -261,21 +261,51 @@ check(
 -- Health ---------------------------------------------------------------------
 print('-- health')
 
--- record what :checkhealth would print, as `<kind> <message>` lines
-local report = {}
-local health = vim.health
-vim.health = setmetatable({}, {
-  __index = function(_, kind)
-    return function(msg) report[#report + 1] = kind .. ' ' .. msg end
-  end,
-})
-require('beside.health').check()
-vim.health = health
-report = table.concat(report, '\n')
+-- what :checkhealth would print, as `<kind> <message> <advice>` lines
+local function health_report()
+  local lines = {}
+  local health = vim.health
+  vim.health = setmetatable({}, {
+    __index = function(_, kind)
+      return function(msg, advice)
+        lines[#lines + 1] = kind .. ' ' .. msg .. ' ' .. table.concat(advice or {}, ' ')
+      end
+    end,
+  })
+  require('beside.health').check()
+  vim.health = health
+  return table.concat(lines, '\n')
+end
+
+local report = health_report()
 local renderers_listed = contains(report, 'start Renderers') and contains(report, 'leaf')
 local filetypes_listed = contains(report, 'start Filetypes') and contains(report, 'rst')
 check('checkhealth lists the renderers', renderers_listed, report)
 check('checkhealth lists the filetypes', filetypes_listed, report)
+
+-- a renderer that fails, like a pandoc too old for its ansi writer
+Beside.setup({
+  renderers = {
+    broken = {
+      filetypes = {
+        fake = true,
+      },
+      executable = 'sh',
+      command = function() return { 'sh', '-c', 'echo "Unknown output format ansi" >&2; exit 22' } end,
+    },
+  },
+})
+report = health_report()
+local failure_reported = contains(report, 'error broken (')
+  and contains(report, 'exited with code 22')
+  and contains(report, 'Unknown output format ansi')
+check('checkhealth runs a renderer and reports its failure', failure_reported, report)
+check(
+  'checkhealth flags a filetype left to a failing renderer',
+  contains(report, 'warn fake: broken, which fails above'),
+  report
+)
+Beside.setup({})
 
 print('-- results')
 print(failed == 0 and 'all checks passed\n' or failed .. ' checks FAILED\n')
