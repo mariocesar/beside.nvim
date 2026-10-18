@@ -29,6 +29,8 @@ Beside.config = {
   -- Renderers to try first, per filetype
   prefer = {
     markdown = { 'leaf', 'glow', 'pandoc' },
+    rmd = { 'leaf', 'glow', 'pandoc' },
+    quarto = { 'leaf', 'glow', 'pandoc' },
   },
 
   -- Renderers by name; the builtins live in lua/beside/renderers.lua

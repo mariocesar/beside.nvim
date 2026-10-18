@@ -86,6 +86,8 @@ require('beside').setup({
   -- filetype follows, by name; the first one installed renders.
   prefer = {
     markdown = { 'leaf', 'glow', 'pandoc' },
+    rmd = { 'leaf', 'glow', 'pandoc' },
+    quarto = { 'leaf', 'glow', 'pandoc' },
   },
 
   -- Renderers by name; the builtins are leaf, glow, pandoc and carve
