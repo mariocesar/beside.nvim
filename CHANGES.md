@@ -11,6 +11,9 @@ those itself.
 - carve's navy links, red deletions and blue headings show up on dark themes
   without terminal colors.
 - Dim text, borders and rules keep their faint colors. Faint was the point.
+- Focusing a floating window no longer moves the preview to it. An LSP hover
+  is a markdown buffer, so pressing `K` twice used to show the hover text in
+  the preview and closing the hover closed the preview.
 
 ## v0.2.1 (2026-09-27)
 

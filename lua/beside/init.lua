@@ -296,6 +296,8 @@ H.on_buf_enter = function(event)
   local buf = event.buf
   if not H.is_open() or buf == H.state.source or buf == H.state.buf then return end
   if api.nvim_win_get_tabpage(0) ~= api.nvim_win_get_tabpage(H.state.win) then return end
+  -- A float is not a document opened beside: an LSP hover is a markdown buffer
+  if api.nvim_win_get_config(0).relative ~= '' then return end
   if H.can_render(buf) then H.attach(buf, nil) end
 end
 
