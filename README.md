@@ -37,6 +37,9 @@ markup language, beside will be ready for it!
 ![A Carve document rendered by carve](demo/carve.gif)
 *Carve rendered by carve.*
 
+![An R Markdown document rendered by leaf, then a Quarto document opened beside it](demo/rmd-quarto.gif)
+*R Markdown and Quarto rendered by leaf. Opening the Quarto document moves the preview to it.*
+
 ## Requirements
 
 - Neovim 0.10 or newer

@@ -15,7 +15,7 @@ format:
 format-check:
 	$(STYLUA) --check lua plugin test
 
-demo: demo/markdown.gif demo/rst.gif demo/carve.gif demo/renderers.gif
+demo: demo/markdown.gif demo/rst.gif demo/carve.gif demo/renderers.gif demo/rmd-quarto.gif
 
 demo/%.gif: | demo/%.tape
 	$(VHS) $|
