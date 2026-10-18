@@ -20,9 +20,10 @@
 
 local renderers = {}
 
--- leaf renders markdown, https://github.com/RivoLink/leaf
+-- leaf renders markdown, https://github.com/RivoLink/leaf. R Markdown and
+-- Quarto are markdown with code chunks, so the markdown renderers take them.
 renderers.leaf = {
-  filetypes = { markdown = true },
+  filetypes = { markdown = true, rmd = true, quarto = true },
   command = function(context)
     return { 'leaf', '--inline', 'ansi', '--width', tostring(context.width) }
   end,
@@ -31,7 +32,7 @@ renderers.leaf = {
 -- glow renders markdown, https://github.com/charmbracelet/glow. Its `style`
 -- option names a glow style; the editor's 'background' is the default.
 renderers.glow = {
-  filetypes = { markdown = true },
+  filetypes = { markdown = true, rmd = true, quarto = true },
   env = { CLICOLOR_FORCE = '1' },
   command = function(context)
     local style = context.renderer.style or context.background
@@ -40,10 +41,13 @@ renderers.glow = {
 }
 
 -- pandoc 3.1.10 or newer, for its `ansi` writer. Any format pandoc reads can
--- be added to `filetypes`, mapped to pandoc's name for it.
+-- be added to `filetypes`, mapped to pandoc's name for it. `gfm` rather than
+-- `markdown` for the markdown family: it accepts the `{r}` chunk fences.
 renderers.pandoc = {
   filetypes = {
     markdown = 'gfm',
+    rmd = 'gfm',
+    quarto = 'gfm',
     rst = 'rst',
     asciidoc = 'asciidoc',
     org = 'org',
