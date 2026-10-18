@@ -1,0 +1,94 @@
+---
+title: "Fuel economy in the mtcars data"
+author: "Mario César"
+date: "2026-10-17"
+output:
+  html_document:
+    toc: true
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(ggplot2)
+library(dplyr)
+```
+
+# Introduction
+
+The `mtcars` data set ships with R: 32 cars from the 1974 *Motor Trend*
+magazine, with fuel consumption and ten aspects of design. This report asks
+one question: **how much does weight cost in miles per gallon?**
+
+> Everything should be made as simple as possible, but not simpler.
+
+# Data
+
+```{r glimpse}
+mtcars %>%
+  select(mpg, cyl, hp, wt) %>%
+  head()
+```
+
+The variables used here:
+
+- `mpg`: miles per US gallon
+- `cyl`: number of cylinders
+- `hp`: gross horsepower
+- `wt`: weight in thousands of pounds
+
+Cars have between `r min(mtcars$cyl)` and `r max(mtcars$cyl)` cylinders, and
+the median car weighs `r round(median(mtcars$wt) * 1000)` pounds.
+
+# Weight against fuel economy
+
+```{r scatter, fig.cap="Heavier cars burn more fuel", fig.width=6, fig.height=4}
+ggplot(mtcars, aes(wt, mpg, colour = factor(cyl))) +
+  geom_point(size = 3) +
+  geom_smooth(method = "lm", se = FALSE, colour = "grey40") +
+  labs(x = "Weight (1000 lbs)", y = "Miles per gallon", colour = "Cylinders")
+```
+
+A linear model puts a number on the slope:
+
+```{r model}
+fit <- lm(mpg ~ wt, data = mtcars)
+coef(summary(fit))
+```
+
+Each extra thousand pounds costs about `r round(abs(coef(fit)[2]), 1)` miles
+per gallon. The fitted line is
+
+$$\widehat{\text{mpg}} = \beta_0 + \beta_1 \cdot \text{wt}$$
+
+# By cylinder count
+
+```{r table}
+mtcars %>%
+  group_by(cyl) %>%
+  summarise(cars = n(), mpg = mean(mpg), hp = mean(hp)) %>%
+  knitr::kable(digits = 1, caption = "Averages per cylinder count")
+```
+
+| Cylinders | Typical use            |
+|-----------|------------------------|
+| 4         | Economy cars           |
+| 6         | Mid-size sedans        |
+| 8         | Muscle cars and trucks |
+
+# Reproducing this report
+
+Knit it from a shell with:
+
+```bash
+Rscript -e 'rmarkdown::render("sample.Rmd")'
+```
+
+See the [R Markdown book](https://bookdown.org/yihui/rmarkdown/) for the
+chunk options used above.
+
+# Appendix: session
+
+```{r session, echo=FALSE}
+sessionInfo()
+```

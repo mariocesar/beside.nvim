@@ -1,0 +1,77 @@
+---
+title: "Penguins by island"
+author: "Mario César"
+format:
+  html:
+    toc: true
+    code-fold: true
+execute:
+  echo: false
+  warning: false
+jupyter: python3
+---
+
+# Summary
+
+The Palmer penguins data has **344 birds** of three species from three islands
+near the Palmer Station in Antarctica. Body mass separates the species well,
+see @fig-mass, and each island hosts a different mix, see @tbl-islands.
+
+```{python}
+#| label: setup
+import pandas as pd
+import seaborn as sns
+
+penguins = sns.load_dataset("penguins").dropna()
+```
+
+::: {.callout-note}
+Rows with missing measurements are dropped before every figure and table.
+:::
+
+# Body mass
+
+```{python}
+#| label: fig-mass
+#| fig-cap: "Body mass by species, in grams"
+sns.boxplot(data=penguins, x="species", y="body_mass_g", hue="sex")
+```
+
+Gentoo penguins are the heavy ones. Their median mass is
+`{python} int(penguins.query("species == 'Gentoo'").body_mass_g.median())` g,
+against `{python} int(penguins.query("species == 'Adelie'").body_mass_g.median())` g
+for Adelie.
+
+# Islands
+
+```{python}
+#| label: tbl-islands
+#| tbl-cap: "Birds per species and island"
+pd.crosstab(penguins.species, penguins.island)
+```
+
+Only Adelie penguins live on all three islands:
+
+1. **Biscoe** has Adelie and Gentoo
+2. **Dream** has Adelie and Chinstrap
+3. **Torgersen** has Adelie alone
+
+::: {.callout-tip}
+## Try it yourself
+
+Render this document with `quarto render sample.qmd`, or preview it live
+with `quarto preview sample.qmd`.
+:::
+
+# Method
+
+Measurements come from the [palmerpenguins](https://allisonhorst.github.io/palmerpenguins/)
+package, collected between 2007 and 2009. The flipper and bill measurements
+are in millimetres, the body mass in grams:
+
+| Measurement         | Unit | Range       |
+|---------------------|------|-------------|
+| Bill length         | mm   | 32 to 60    |
+| Bill depth          | mm   | 13 to 22    |
+| Flipper length      | mm   | 172 to 231  |
+| Body mass           | g    | 2700 to 6300 |
