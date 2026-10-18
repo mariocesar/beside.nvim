@@ -119,6 +119,16 @@ vim.g.terminal_color_1 = '#123456'
 check('palette: the colorscheme terminal colors win', Ansi.palette(1) == '#123456')
 vim.g.terminal_color_1 = nil
 
+check('blend: halfway', Ansi.blend('#000000', '#ffffff', 0.5) == '#808080')
+check('contrast: black on white', Ansi.contrast('#000000', '#ffffff') == 21)
+check('contrast: same color', Ansi.contrast('#808080', '#808080') == 1)
+check('readable: a good pair is kept', Ansi.readable('#c0caf5', '#1a1b26') == '#c0caf5')
+
+-- pandoc's inline code under tokyonight: red on light gray
+local fixed = Ansi.readable('#f7768e', '#a9b1d6')
+check('readable: a poor pair reaches 3:1', Ansi.contrast(fixed, '#a9b1d6') >= 3, fixed)
+check('readable: moves away from a light background', fixed < '#f7768e', fixed)
+
 -- Anchors --------------------------------------------------------------------
 print('-- anchors')
 

@@ -59,6 +59,63 @@ Ansi.palette = function(index)
   return ('#%02x%02x%02x'):format(red, green, blue)
 end
 
+--- Mix two '#rrggbb' colors, `amount` 0 gives `from`, 1 gives `to`
+---@param from string
+---@param to string
+---@param amount number
+---@return string
+Ansi.blend = function(from, to, amount)
+  local a = tonumber(from:sub(2), 16)
+  local b = tonumber(to:sub(2), 16)
+  local channels = {}
+  for _, shift in ipairs({ 16, 8, 0 }) do
+    local x = math.floor(a / 2 ^ shift) % 256
+    local y = math.floor(b / 2 ^ shift) % 256
+    channels[#channels + 1] = math.floor(x + (y - x) * amount + 0.5)
+  end
+  return ('#%02x%02x%02x'):format(channels[1], channels[2], channels[3])
+end
+
+--- WCAG contrast ratio of two '#rrggbb' colors, from 1 to 21
+---@param a string
+---@param b string
+---@return number
+Ansi.contrast = function(a, b)
+  local luminance = function(color)
+    local n = tonumber(color:sub(2), 16)
+    local total = 0
+    for i, weight in ipairs({ 0.2126, 0.7152, 0.0722 }) do
+      local channel = (math.floor(n / 2 ^ (24 - 8 * i)) % 256) / 255
+      if channel <= 0.03928 then
+        channel = channel / 12.92
+      else
+        channel = ((channel + 0.055) / 1.055) ^ 2.4
+      end
+      total = total + weight * channel
+    end
+    return total
+  end
+  local light = math.max(luminance(a), luminance(b))
+  local dark = math.min(luminance(a), luminance(b))
+  return (light + 0.05) / (dark + 0.05)
+end
+
+--- `fg` when it reads at 3:1 on `bg`, otherwise `fg` moved toward white or
+--- black, whichever is further from `bg`, until it does
+---@param fg string
+---@param bg string
+---@return string
+Ansi.readable = function(fg, bg)
+  if Ansi.contrast(fg, bg) >= 3 then return fg end
+  local target = '#000000'
+  if Ansi.contrast('#ffffff', bg) > Ansi.contrast('#000000', bg) then target = '#ffffff' end
+  for step = 1, 10 do
+    local color = Ansi.blend(fg, target, step / 10)
+    if Ansi.contrast(color, bg) >= 3 then return color end
+  end
+  return target
+end
+
 -- The color following a 38 or 48 code: `5;n` from the palette, `2;r;g;b` as is
 Ansi.extended_color = function(codes)
   local mode = table.remove(codes, 1)
